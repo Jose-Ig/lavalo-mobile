@@ -1,56 +1,157 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  Image,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StartService'>;
 
 export default function StartServiceScreen({ navigation }: Props) {
+  const [patente, setPatente] = useState('');
+  const [qrScanned, setQrScanned] = useState(false);
+  const [estacion, setEstacion] = useState<string | null>(null);
+
+  const handleScanQR = () => {
+    // TODO: Integrar expo-camera o expo-barcode-scanner para escaneo real
+    Alert.alert(
+      'Escanear QR',
+      'Se abrirá la cámara para escanear el código QR del lavadero.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Simular escaneo',
+          onPress: () => {
+            // Simular obtener la estación del QR escaneado
+            const estacionesSimuladas = ['Estación 1', 'Estación 2', 'Estación 3', 'Estación 4'];
+            const estacionAleatoria = estacionesSimuladas[Math.floor(Math.random() * estacionesSimuladas.length)];
+            
+            setQrScanned(true);
+            setEstacion(estacionAleatoria);
+            Alert.alert('✅ QR Escaneado', `Código QR de ${estacionAleatoria} escaneado correctamente.`);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleStartService = () => {
+    if (!patente.trim()) {
+      Alert.alert('Error', 'Por favor ingresá la patente del vehículo.');
+      return;
+    }
+    
+    // TODO: Validar con backend y iniciar servicio
+    navigation.navigate('Success');
+  };
+
+  const isFormValid = patente.trim().length > 0;
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Iniciar Servicio</Text>
-      <Text style={styles.subtitle}>Escanea el código QR en el lavadero</Text>
+    <KeyboardAvoidingView
+      style={styles.keyboardView}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>Iniciar Servicio</Text>
+        <Text style={styles.subtitle}>Escanea el código QR en el espacio reservado</Text>
 
-      <View style={styles.qrPlaceholder}>
-        <Text style={styles.qrIcon}>📷</Text>
-        <Text style={styles.qrText}>Cámara QR aquí</Text>
-      </View>
-
-      <View style={styles.infoCard}>
-        <Text style={styles.infoTitle}>Tu código de reserva</Text>
-        <Text style={styles.codeText}>#LAV-001234</Text>
-        <Text style={styles.infoSubtitle}>
-          Muestra este código al personal si tienes problemas
-        </Text>
-      </View>
-
-      <View style={styles.buttonContainer}>
+        {/* Botón de escaneo QR */}
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate('Success')}
+          style={[styles.qrButton, qrScanned && styles.qrButtonScanned]}
+          onPress={handleScanQR}
+          activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Simular Escaneo Exitoso</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.secondaryButton]}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-            Volver
+          {/* Icono bicolor: mitad negro, mitad azul */}
+          <View style={styles.qrIconContainer}>
+            {/* Mitad izquierda - Negro */}
+            <View style={styles.qrIconHalfLeft}>
+              <Image
+                source={require('../assets/qr_scan_icon.png')}
+                style={[styles.qrIcon, { tintColor: '#333' }]}
+                resizeMode="contain"
+              />
+            </View>
+            {/* Mitad derecha - Azul */}
+            <View style={styles.qrIconHalfRight}>
+              <Image
+                source={require('../assets/qr_scan_icon.png')}
+                style={[styles.qrIcon, { tintColor: '#178fe5' }]}
+                resizeMode="contain"
+              />
+            </View>
+          </View>
+          <Text style={[styles.qrText, qrScanned && styles.qrTextScanned]}>
+            {qrScanned ? 'QR Escaneado ✓' : 'Toca para escanear'}
           </Text>
         </TouchableOpacity>
-      </View>
-    </View>
+
+        {/* Mostrar estación escaneada */}
+        {qrScanned && estacion && (
+          <View style={styles.estacionContainer}>
+            <Text style={styles.estacionLabel}>Espacio asignado:</Text>
+            <Text style={styles.estacionText}>{estacion}</Text>
+          </View>
+        )}
+
+        {/* Input de patente */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Patente del vehículo</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ej: ABC123"
+            placeholderTextColor="#999"
+            autoCapitalize="characters"
+            value={patente}
+            onChangeText={(text) => setPatente(text.toUpperCase())}
+            maxLength={7}
+          />
+        </View>
+
+        {/* Botón Iniciar */}
+        <View style={styles.startContainer}>
+          <TouchableOpacity
+            style={[styles.startButton, !isFormValid && styles.startButtonDisabled]}
+            onPress={handleStartService}
+            disabled={!isFormValid}
+          >
+            <Text style={styles.startButtonText}>Iniciar</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.warningText}>
+            Una vez iniciado el servicio, este durará durante el tiempo reservado y no podrá pausarse ni cancelarse.
+          </Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  keyboardView: {
     flex: 1,
-    backgroundColor: '#fff',
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#fbfaf9',
+  },
+  container: {
     padding: 20,
     alignItems: 'center',
+    paddingBottom: 40,
   },
   title: {
     fontSize: 28,
@@ -63,74 +164,126 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginBottom: 32,
+    textAlign: 'center',
   },
-  qrPlaceholder: {
-    width: 250,
-    height: 250,
-    backgroundColor: '#f5f5f5',
+  qrButton: {
+    width: 200,
+    height: 200,
+    backgroundColor: '#fff',
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 32,
     borderWidth: 3,
-    borderColor: '#ddd',
-    borderStyle: 'dashed',
+    borderColor: '#178fe5',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  qrButtonScanned: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+  },
+  qrIconContainer: {
+    width: 80,
+    height: 80,
+    marginBottom: 12,
+    position: 'relative',
+  },
+  qrIconHalfLeft: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 40,
+    height: 80,
+    overflow: 'hidden',
+  },
+  qrIconHalfRight: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 40,
+    height: 80,
+    overflow: 'hidden',
+    alignItems: 'flex-end',
   },
   qrIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+    width: 80,
+    height: 80,
   },
   qrText: {
     fontSize: 16,
-    color: '#999',
+    color: '#178fe5',
+    fontWeight: '500',
   },
-  infoCard: {
-    width: '100%',
-    backgroundColor: '#E3F2FD',
+  qrTextScanned: {
+    color: '#4CAF50',
+  },
+  estacionContainer: {
+    backgroundColor: '#E8F5E9',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 12,
-    padding: 20,
+    marginBottom: 24,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+  },
+  estacionLabel: {
+    fontSize: 14,
+    color: '#2E7D32',
+    marginBottom: 4,
+  },
+  estacionText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2E7D32',
+  },
+  inputContainer: {
+    width: '100%',
     marginBottom: 32,
   },
-  infoTitle: {
+  label: {
     fontSize: 14,
-    color: '#1976D2',
+    fontWeight: '600',
+    color: '#333',
     marginBottom: 8,
   },
-  codeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1976D2',
-    marginBottom: 8,
-  },
-  infoSubtitle: {
-    fontSize: 14,
-    color: '#1976D2',
-    textAlign: 'center',
-  },
-  buttonContainer: {
-    width: '100%',
-    gap: 12,
-  },
-  button: {
-    backgroundColor: '#007AFF',
+  input: {
+    backgroundColor: '#f5f5f5',
     paddingVertical: 16,
-    paddingHorizontal: 32,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    fontSize: 16,
+    color: '#333',
+  },
+  startContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  startButton: {
+    width: '100%',
+    backgroundColor: '#178fe5',
+    paddingVertical: 18,
     borderRadius: 12,
     alignItems: 'center',
   },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#007AFF',
+  startButtonDisabled: {
+    backgroundColor: '#ccc',
   },
-  buttonText: {
+  startButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
   },
-  secondaryButtonText: {
-    color: '#007AFF',
+  warningText: {
+    marginTop: 16,
+    fontSize: 13,
+    color: '#999',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 20,
   },
 });
-

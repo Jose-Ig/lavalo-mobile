@@ -8,31 +8,10 @@ type Props = NativeStackScreenProps<RootStackParamList, 'HaveTurn'>;
 export default function HaveTurnScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Mi Turno</Text>
-      <Text style={styles.subtitle}>Detalles de tu reserva actual</Text>
-
-      <View style={styles.turnCard}>
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>Confirmado</Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Fecha</Text>
-          <Text style={styles.detailValue}>15 de Enero, 2025</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Hora</Text>
-          <Text style={styles.detailValue}>10:00 AM</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Servicio</Text>
-          <Text style={styles.detailValue}>Lavado Completo</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Código</Text>
-          <Text style={styles.detailValue}>#LAV-001234</Text>
-        </View>
-      </View>
+      <Text style={styles.title}>Mi Reserva</Text>
+      <Text style={styles.subtitle}>
+        ¿Qué querés hacer con tu reserva?
+      </Text>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity
@@ -43,21 +22,20 @@ export default function HaveTurnScreen({ navigation }: Props) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.button, styles.secondaryButton]}
-          onPress={() => navigation.navigate('ChangeTurn')}
+          style={[styles.button, styles.buttonWhite]}
+          onPress={() => navigation.navigate('VerifyTurn')}
         >
-          <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-            Cambiar Turno
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.dangerButton]}
-          onPress={() => navigation.navigate('Home')}
-        >
-          <Text style={styles.buttonText}>Cancelar Turno</Text>
+          <Text style={[styles.buttonText, styles.buttonTextBlue]}>Ver datos de mi reserva</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Texto clickeable para cambiar turno */}
+      <TouchableOpacity
+        style={styles.changeTurnLink}
+        onPress={() => navigation.navigate('ChangeTurn')}
+      >
+        <Text style={styles.changeTurnText}>Cambiar Reserva</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -65,79 +43,55 @@ export default function HaveTurnScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#fbfaf9',
     padding: 20,
+    justifyContent: 'center',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 8,
     color: '#333',
-    marginTop: 40,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 32,
-  },
-  turnCard: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 32,
-    gap: 16,
-  },
-  statusBadge: {
-    backgroundColor: '#E8F5E9',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-  },
-  statusText: {
-    color: '#4CAF50',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  detailLabel: {
-    fontSize: 16,
-    color: '#666',
-  },
-  detailValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    marginBottom: 40,
+    textAlign: 'center',
   },
   buttonContainer: {
-    gap: 12,
+    gap: 16,
   },
   button: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 16,
+    backgroundColor: '#178fe5',
+    paddingVertical: 18,
     paddingHorizontal: 32,
     borderRadius: 12,
     alignItems: 'center',
   },
-  secondaryButton: {
-    backgroundColor: 'transparent',
+  buttonWhite: {
+    backgroundColor: '#fff',
     borderWidth: 2,
-    borderColor: '#007AFF',
-  },
-  dangerButton: {
-    backgroundColor: '#FF3B30',
+    borderColor: '#178fe5',
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
-  secondaryButtonText: {
-    color: '#007AFF',
+  buttonTextBlue: {
+    color: '#178fe5',
+  },
+  changeTurnLink: {
+    marginTop: 32,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  changeTurnText: {
+    color: '#178fe5',
+    fontSize: 16,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
   },
 });
-

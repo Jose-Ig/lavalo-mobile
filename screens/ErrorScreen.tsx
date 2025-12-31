@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 
@@ -9,12 +9,16 @@ export default function ErrorScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
-        <Text style={styles.icon}>❌</Text>
+        <Image
+          source={require('../assets/warning_icon.png')}
+          style={styles.icon}
+          resizeMode="contain"
+        />
       </View>
 
-      <Text style={styles.title}>Error en el Pago</Text>
+      <Text style={styles.title}>Error en el pago</Text>
       <Text style={styles.subtitle}>
-        No pudimos procesar tu pago. Por favor, intenta nuevamente o usa otro método de pago.
+        No pudimos procesar tu pago. Por favor, intenta nuevamente.
       </Text>
 
       <View style={styles.buttonContainer}>
@@ -41,7 +45,7 @@ export default function ErrorScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#fbfaf9',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
@@ -56,7 +60,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   icon: {
-    fontSize: 48,
+    width: 60,
+    height: 60,
   },
   title: {
     fontSize: 28,
@@ -77,7 +82,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#178fe5',
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
@@ -86,7 +91,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: '#007AFF',
+    borderColor: '#178fe5',
   },
   buttonText: {
     color: '#fff',
@@ -94,7 +99,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   secondaryButtonText: {
-    color: '#007AFF',
+    color: '#178fe5',
   },
 });
 

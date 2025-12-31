@@ -1,69 +1,80 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
+import CircleBookingSelector, { BookingSelection } from '../src/components/CircleBookingSelector';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ChooseDate'>;
 
 export default function ChooseDateScreen({ navigation }: Props) {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Elegir Fecha</Text>
-      <Text style={styles.subtitle}>Selecciona el día y hora para tu turno</Text>
+  const [selection, setSelection] = useState<BookingSelection | null>(null);
 
-      <View style={styles.placeholder}>
-        <Text style={styles.placeholderText}>📅 Calendario aquí</Text>
-      </View>
+  const handleSelectionChange = (newSelection: BookingSelection) => {
+    setSelection(newSelection);
+    console.log('Selección:', newSelection);
+  };
+
+  return (
+    <ScrollView 
+      style={styles.scrollView}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text style={styles.title}>Reservá tu lugar</Text>
+
+      <CircleBookingSelector
+        onChange={handleSelectionChange}
+        defaultDuration={60}
+      />
 
       <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('ReservationForm')}
+        style={[styles.button, !selection && styles.buttonDisabled]}
+        onPress={() => {
+          if (selection) {
+            navigation.navigate('ReservationForm', { booking: selection });
+          }
+        }}
+        disabled={!selection}
       >
         <Text style={styles.buttonText}>Continuar</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#fbfaf9',
+  },
+  container: {
     alignItems: 'center',
-    justifyContent: 'center',
     padding: 20,
+    paddingTop: 40,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 45,
     color: '#333',
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 40,
-  },
-  placeholder: {
-    width: '100%',
-    height: 200,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 40,
-  },
-  placeholderText: {
-    fontSize: 18,
-    color: '#999',
+    marginBottom: 24,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#178fe5',
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
     width: '100%',
     alignItems: 'center',
+    marginTop: 45,
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
   },
   buttonText: {
     color: '#fff',
@@ -71,4 +82,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-

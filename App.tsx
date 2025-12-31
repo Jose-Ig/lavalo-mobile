@@ -13,18 +13,36 @@ import ErrorScreen from './screens/ErrorScreen';
 import HaveTurnScreen from './screens/HaveTurnScreen';
 import ChangeTurnScreen from './screens/ChangeTurnScreen';
 import StartServiceScreen from './screens/StartServiceScreen';
+import VerifyTurnScreen from './screens/VerifyTurnScreen';
+
+// Tipos para los datos de reserva
+export interface BookingData {
+  date: string;
+  time: string;
+  duration: number;
+  espacio: number;
+}
+
+export interface ReservationData extends BookingData {
+  nombre: string;
+  telefono: string;
+  patente: string;
+  modelo: string;
+  dimensiones: string;
+}
 
 // Definición de tipos para las rutas del Stack Navigator
 export type RootStackParamList = {
   Home: undefined;
   ChooseDate: undefined;
-  ReservationForm: undefined;
-  Payment: undefined;
+  ReservationForm: { booking: BookingData };
+  Payment: { reservation: ReservationData };
   Success: undefined;
   Error: undefined;
   HaveTurn: undefined;
   ChangeTurn: undefined;
   StartService: undefined;
+  VerifyTurn: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -37,42 +55,42 @@ export default function App() {
         initialRouteName="Home"
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#007AFF',
+            backgroundColor: '#178fe5',
           },
           headerTintColor: '#fff',
           headerTitleStyle: {
             fontWeight: '600',
           },
           contentStyle: {
-            backgroundColor: '#fff',
+            backgroundColor: '#fbfaf9',
           },
         }}
       >
         <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{ title: 'Lavalo' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="ChooseDate"
           component={ChooseDateScreen}
-          options={{ title: 'Elegir Fecha' }}
+          options={{ title: '' }}
         />
         <Stack.Screen
           name="ReservationForm"
           component={ReservationFormScreen}
-          options={{ title: 'Datos de Reserva' }}
+          options={{ title: '' }}
         />
         <Stack.Screen
           name="Payment"
           component={PaymentScreen}
-          options={{ title: 'Pago' }}
+          options={{ title: '' }}
         />
         <Stack.Screen
           name="Success"
           component={SuccessScreen}
           options={{ 
-            title: 'Confirmación',
+            title: '',
             headerBackVisible: false,
           }}
         />
@@ -80,24 +98,29 @@ export default function App() {
           name="Error"
           component={ErrorScreen}
           options={{ 
-            title: 'Error',
+            title: '',
             headerBackVisible: false,
           }}
         />
         <Stack.Screen
           name="HaveTurn"
           component={HaveTurnScreen}
-          options={{ title: 'Mi Turno' }}
+          options={{ title: '' }}
         />
         <Stack.Screen
           name="ChangeTurn"
           component={ChangeTurnScreen}
-          options={{ title: 'Cambiar Turno' }}
+          options={{ title: '' }}
         />
         <Stack.Screen
           name="StartService"
           component={StartServiceScreen}
-          options={{ title: 'Iniciar Servicio' }}
+          options={{ title: '' }}
+        />
+        <Stack.Screen
+          name="VerifyTurn"
+          component={VerifyTurnScreen}
+          options={{ title: '' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

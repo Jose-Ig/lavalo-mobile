@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 
@@ -9,12 +9,16 @@ export default function SuccessScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
-        <Text style={styles.icon}>✅</Text>
+        <Image
+          source={require('../assets/success_icon.png')}
+          style={styles.icon}
+          resizeMode="contain"
+        />
       </View>
 
       <Text style={styles.title}>¡Reserva Confirmada!</Text>
       <Text style={styles.subtitle}>
-        Tu turno ha sido reservado exitosamente. Te enviamos los detalles por email.
+        Tu reserva ha sido exitosa. Te enviamos los detalles por whatsapp.
       </Text>
 
       <View style={styles.detailsCard}>
@@ -45,7 +49,7 @@ export default function SuccessScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#fbfaf9',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
@@ -60,7 +64,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   icon: {
-    fontSize: 48,
+    width: 60,
+    height: 60,
   },
   title: {
     fontSize: 28,
@@ -99,7 +104,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#178fe5',
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
