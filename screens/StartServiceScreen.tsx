@@ -11,6 +11,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 
@@ -20,9 +21,9 @@ export default function StartServiceScreen({ navigation }: Props) {
   const [patente, setPatente] = useState('');
   const [qrScanned, setQrScanned] = useState(false);
   const [estacion, setEstacion] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
 
   const handleScanQR = () => {
-    // TODO: Integrar expo-camera o expo-barcode-scanner para escaneo real
     Alert.alert(
       'Escanear QR',
       'Se abrirá la cámara para escanear el código QR del lavadero.',
@@ -31,13 +32,11 @@ export default function StartServiceScreen({ navigation }: Props) {
         {
           text: 'Simular escaneo',
           onPress: () => {
-            // Simular obtener la estación del QR escaneado
-            const estacionesSimuladas = ['Estación 1', 'Estación 2', 'Estación 3', 'Estación 4'];
-            const estacionAleatoria = estacionesSimuladas[Math.floor(Math.random() * estacionesSimuladas.length)];
-            
+            const estaciones = ['Estación 1', 'Estación 2', 'Estación 3', 'Estación 4'];
+            const estacionAleatoria = estaciones[Math.floor(Math.random() * estaciones.length)];
             setQrScanned(true);
             setEstacion(estacionAleatoria);
-            Alert.alert('✅ QR Escaneado', `Código QR de ${estacionAleatoria} escaneado correctamente.`);
+            Alert.alert('QR Escaneado', `${estacionAleatoria} escaneada correctamente.`);
           },
         },
       ]
@@ -49,116 +48,122 @@ export default function StartServiceScreen({ navigation }: Props) {
       Alert.alert('Error', 'Por favor ingresá la patente del vehículo.');
       return;
     }
-    
-    // TODO: Validar con backend y iniciar servicio
-    navigation.navigate('Success');
+    navigation.navigate('ActiveService');
   };
 
-  const isFormValid = patente.trim().length > 0;
-
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardView}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={styles.title}>Iniciar Servicio</Text>
-        <Text style={styles.subtitle}>Escanea el código QR en el espacio reservado</Text>
-
-        {/* Botón de escaneo QR */}
-        <TouchableOpacity
-          style={[styles.qrButton, qrScanned && styles.qrButtonScanned]}
-          onPress={handleScanQR}
-          activeOpacity={0.8}
-        >
-          {/* Icono bicolor: mitad negro, mitad azul */}
-          <View style={styles.qrIconContainer}>
-            {/* Mitad izquierda - Negro */}
-            <View style={styles.qrIconHalfLeft}>
-              <Image
-                source={require('../assets/qr_scan_icon.png')}
-                style={[styles.qrIcon, { tintColor: '#333' }]}
-                resizeMode="contain"
-              />
-            </View>
-            {/* Mitad derecha - Azul */}
-            <View style={styles.qrIconHalfRight}>
-              <Image
-                source={require('../assets/qr_scan_icon.png')}
-                style={[styles.qrIcon, { tintColor: '#178fe5' }]}
-                resizeMode="contain"
-              />
-            </View>
-          </View>
-          <Text style={[styles.qrText, qrScanned && styles.qrTextScanned]}>
-            {qrScanned ? 'QR Escaneado ✓' : 'Toca para escanear'}
-          </Text>
+    <View style={styles.root}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.7}>
+          <Text style={styles.backArrow}>{'‹'}</Text>
         </TouchableOpacity>
+        <Text style={styles.headerTitle}>Iniciar Servicio</Text>
+      </View>
 
-        {/* Mostrar estación escaneada */}
-        {qrScanned && estacion && (
-          <View style={styles.estacionContainer}>
-            <Text style={styles.estacionLabel}>Espacio asignado:</Text>
-            <Text style={styles.estacionText}>{estacion}</Text>
-          </View>
-        )}
+      <KeyboardAvoidingView
+        style={styles.sheet}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.subtitle}>Escanea el código QR en el espacio reservado</Text>
 
-        {/* Input de patente */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Patente del vehículo</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ej: ABC123"
-            placeholderTextColor="#999"
-            autoCapitalize="characters"
-            value={patente}
-            onChangeText={(text) => setPatente(text.toUpperCase())}
-            maxLength={7}
-          />
-        </View>
-
-        {/* Botón Iniciar */}
-        <View style={styles.startContainer}>
           <TouchableOpacity
-            style={[styles.startButton, !isFormValid && styles.startButtonDisabled]}
-            onPress={handleStartService}
-            disabled={!isFormValid}
+            style={[styles.qrButton, qrScanned && styles.qrButtonScanned]}
+            onPress={handleScanQR}
+            activeOpacity={0.8}
           >
-            <Text style={styles.startButtonText}>Iniciar</Text>
+            <Image
+              source={require('../assets/qr_scan_icon.png')}
+              style={styles.qrIcon}
+              resizeMode="contain"
+              tintColor="#000"
+            />
+            <Text style={[styles.qrText, qrScanned && styles.qrTextScanned]}>
+              {qrScanned ? 'QR Escaneado ✓' : 'Toca para escanear'}
+            </Text>
           </TouchableOpacity>
 
-          <Text style={styles.warningText}>
-            Una vez iniciado el servicio, este durará durante el tiempo reservado y no podrá pausarse ni cancelarse.
-          </Text>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {qrScanned && estacion && (
+            <View style={styles.estacionContainer}>
+              <Text style={styles.estacionLabel}>Espacio asignado</Text>
+              <Text style={styles.estacionText}>{estacion}</Text>
+            </View>
+          )}
+
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>Patente del vehículo</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ej: ABC123"
+              placeholderTextColor="#999"
+              autoCapitalize="characters"
+              value={patente}
+              onChangeText={(text) => setPatente(text.toUpperCase())}
+              maxLength={7}
+            />
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleStartService}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.buttonText}>Iniciar</Text>
+            </TouchableOpacity>
+            <Text style={styles.warningText}>
+              Una vez iniciado el servicio, no podrá pausarse ni cancelarse.
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardView: {
+  root: {
     flex: 1,
+    backgroundColor: '#4170be',
   },
-  scrollView: {
-    flex: 1,
-    backgroundColor: '#fbfaf9',
-  },
-  container: {
-    padding: 20,
+  header: {
+    backgroundColor: '#4170be',
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingBottom: 40,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    gap: 8,
   },
-  title: {
+  backButton: {
+    padding: 4,
+  },
+  backArrow: {
+    fontSize: 40,
+    color: '#fff',
+    lineHeight: 40,
+    marginTop: -4,
+  },
+  headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-    marginTop: 40,
+    color: '#fff',
+  },
+  sheet: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    paddingBottom: 40,
+    alignItems: 'center',
   },
   subtitle: {
     fontSize: 16,
@@ -169,53 +174,26 @@ const styles = StyleSheet.create({
   qrButton: {
     width: 200,
     height: 200,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 32,
     borderWidth: 3,
-    borderColor: '#178fe5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
+    borderColor: '#000',
   },
   qrButtonScanned: {
     borderColor: '#4CAF50',
     backgroundColor: '#E8F5E9',
   },
-  qrIconContainer: {
-    width: 80,
-    height: 80,
-    marginBottom: 12,
-    position: 'relative',
-  },
-  qrIconHalfLeft: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: 40,
-    height: 80,
-    overflow: 'hidden',
-  },
-  qrIconHalfRight: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    width: 40,
-    height: 80,
-    overflow: 'hidden',
-    alignItems: 'flex-end',
-  },
   qrIcon: {
     width: 80,
     height: 80,
+    marginBottom: 12,
   },
   qrText: {
     fontSize: 16,
-    color: '#178fe5',
+    color: '#333',
     fontWeight: '500',
   },
   qrTextScanned: {
@@ -230,6 +208,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#4CAF50',
+    width: '100%',
   },
   estacionLabel: {
     fontSize: 14,
@@ -241,15 +220,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#2E7D32',
   },
-  inputContainer: {
+  fieldContainer: {
     width: '100%',
-    marginBottom: 32,
+    gap: 8,
+    marginBottom: 24,
   },
   label: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
   },
   input: {
     backgroundColor: '#f5f5f5',
@@ -259,24 +238,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  startContainer: {
+  buttonContainer: {
     width: '100%',
     alignItems: 'center',
+    marginTop: 8,
   },
-  startButton: {
+  button: {
     width: '100%',
-    backgroundColor: '#178fe5',
-    paddingVertical: 18,
-    borderRadius: 12,
+    backgroundColor: '#000',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 16,
     alignItems: 'center',
   },
-  startButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  startButtonText: {
+  buttonText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   warningText: {
     marginTop: 16,
@@ -284,6 +262,6 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     lineHeight: 20,
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
   },
 });

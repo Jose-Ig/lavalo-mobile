@@ -9,12 +9,12 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'VerifyTurn'>;
 
-// Datos de turno simulados (en producción vendría del backend)
 interface TurnData {
   patente: string;
   codigo: string;
@@ -26,7 +26,6 @@ interface TurnData {
   estado: string;
 }
 
-// Simulación de turnos existentes
 const MOCK_TURNS: TurnData[] = [
   {
     patente: 'ABC123',
@@ -43,7 +42,7 @@ const MOCK_TURNS: TurnData[] = [
     codigo: 'LAV002',
     fecha: '16 de Enero, 2025',
     hora: '14:30',
-    duracion: '90 min',
+    duracion: '30 min',
     nombre: 'María García',
     modelo: 'Ford Focus 4P',
     estado: 'Confirmado',
@@ -56,19 +55,17 @@ export default function VerifyTurnScreen({ navigation }: Props) {
   const [turnData, setTurnData] = useState<TurnData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const handleVerify = () => {
     setHasSearched(true);
     setError(null);
     setTurnData(null);
-
-    // Buscar turno (simulación - en producción sería una llamada al API)
     const foundTurn = MOCK_TURNS.find(
       (turn) =>
         turn.patente.toUpperCase() === patente.toUpperCase() &&
         turn.codigo.toUpperCase() === codigo.toUpperCase()
     );
-
     if (foundTurn) {
       setTurnData(foundTurn);
     } else {
@@ -79,163 +76,191 @@ export default function VerifyTurnScreen({ navigation }: Props) {
   const isFormValid = patente.trim().length > 0 && codigo.trim().length > 0;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardView}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
+    <View style={styles.root}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.7}>
+          <Text style={styles.backArrow}>{'‹'}</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Ver mi reserva</Text>
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.sheet}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Text style={styles.title}>Ver Datos de mi Turno</Text>
-        <Text style={styles.subtitle}>
-          Ingresá la patente y el código de confirmación que recibiste por WhatsApp
-        </Text>
-
-        {/* Formulario de verificación */}
-        {!turnData && (
-          <View style={styles.form}>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Patente del vehículo</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ej: ABC123"
-                placeholderTextColor="#999"
-                autoCapitalize="characters"
-                value={patente}
-                onChangeText={(text) => {
-                  setPatente(text.toUpperCase());
-                  setHasSearched(false);
-                }}
-                maxLength={7}
-              />
-            </View>
-
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Código de confirmación</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ej: LAV001"
-                placeholderTextColor="#999"
-                autoCapitalize="characters"
-                value={codigo}
-                onChangeText={(text) => {
-                  setCodigo(text.toUpperCase());
-                  setHasSearched(false);
-                }}
-              />
-            </View>
-
-            {/* Mensaje de error */}
-            {error && hasSearched && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            )}
-
-            <TouchableOpacity
-              style={[styles.button, !isFormValid && styles.buttonDisabled]}
-              onPress={handleVerify}
-              disabled={!isFormValid}
-            >
-              <Text style={styles.buttonText}>Buscar Turno</Text>
-            </TouchableOpacity>
-
-            {/* Información de ayuda */}
-            <View style={styles.helpContainer}>
-              <Text style={styles.helpTitle}>¿Dónde encuentro el código?</Text>
-              <Text style={styles.helpText}>
-                El código de confirmación fue enviado a tu WhatsApp cuando confirmaste la reserva. 
-                Tiene el formato LAV seguido de números (ej: LAV001).
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {!turnData && (
+            <>
+              <Text style={styles.subtitle}>
+                Ingresá la patente y el código de confirmación que recibiste por WhatsApp
               </Text>
-            </View>
-          </View>
-        )}
 
-        {/* Datos del turno encontrado */}
-        {turnData && (
-          <View style={styles.turnCard}>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>{turnData.estado}</Text>
-            </View>
+              <View style={styles.form}>
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Patente del vehículo</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ej: ABC123"
+                    placeholderTextColor="#999"
+                    autoCapitalize="characters"
+                    value={patente}
+                    onChangeText={(text) => { setPatente(text.toUpperCase()); setHasSearched(false); }}
+                    maxLength={7}
+                  />
+                </View>
 
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Nombre</Text>
-              <Text style={styles.detailValue}>{turnData.nombre}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Fecha</Text>
-              <Text style={styles.detailValue}>{turnData.fecha}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Hora</Text>
-              <Text style={styles.detailValue}>{turnData.hora}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Duración</Text>
-              <Text style={styles.detailValue}>{turnData.duracion}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Vehículo</Text>
-              <Text style={styles.detailValue}>{turnData.modelo}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Patente</Text>
-              <Text style={styles.detailValue}>{turnData.patente}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Código</Text>
-              <Text style={styles.detailValue}>#{turnData.codigo}</Text>
-            </View>
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Código de confirmación</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ej: LAV001"
+                    placeholderTextColor="#999"
+                    autoCapitalize="characters"
+                    value={codigo}
+                    onChangeText={(text) => { setCodigo(text.toUpperCase()); setHasSearched(false); }}
+                  />
+                </View>
 
-            <View style={styles.buttonContainerCard}>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => navigation.navigate('StartService')}
-              >
-                <Text style={styles.buttonText}>Iniciar Servicio</Text>
-              </TouchableOpacity>
+                {error && hasSearched && (
+                  <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{error}</Text>
+                  </View>
+                )}
+
+                <View style={styles.helpContainer}>
+                  <Text style={styles.helpTitle}>¿Dónde encuentro el código?</Text>
+                  <Text style={styles.helpText}>
+                    El código fue enviado a tu WhatsApp al confirmar la reserva. Formato: LAV seguido de números (ej: LAV001).
+                  </Text>
+                </View>
+              </View>
 
               <TouchableOpacity
-                style={[styles.button, styles.secondaryButton]}
-                onPress={() => {
-                  setTurnData(null);
-                  setPatente('');
-                  setCodigo('');
-                  setHasSearched(false);
-                }}
+                style={[styles.button, !isFormValid && styles.buttonDisabled]}
+                onPress={handleVerify}
+                disabled={!isFormValid}
+                activeOpacity={0.8}
               >
-                <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-                  Buscar Otro Turno
-                </Text>
+                <Text style={styles.buttonText}>Buscar Reserva</Text>
               </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+            </>
+          )}
+
+          {turnData && (
+            <>
+              <View style={styles.statusBadge}>
+                <Text style={styles.statusText}>{turnData.estado}</Text>
+              </View>
+
+              <View style={styles.turnCard}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Nombre</Text>
+                  <Text style={styles.detailValue}>{turnData.nombre}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Fecha</Text>
+                  <Text style={styles.detailValue}>{turnData.fecha}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Hora</Text>
+                  <Text style={styles.detailValue}>{turnData.hora} hs</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Duración</Text>
+                  <Text style={styles.detailValue}>{turnData.duracion}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Vehículo</Text>
+                  <Text style={styles.detailValue}>{turnData.modelo}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Patente</Text>
+                  <Text style={styles.detailValue}>{turnData.patente}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Código</Text>
+                  <Text style={styles.detailValue}>#{turnData.codigo}</Text>
+                </View>
+              </View>
+
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => navigation.navigate('ActiveService')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.buttonText}>Iniciar Servicio</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  onPress={() => {
+                    setTurnData(null);
+                    setPatente('');
+                    setCodigo('');
+                    setHasSearched(false);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.secondaryButtonText}>Buscar Otra Reserva</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardView: {
+  root: {
     flex: 1,
+    backgroundColor: '#4170be',
   },
-  scrollView: {
-    flex: 1,
-    backgroundColor: '#fbfaf9',
+  header: {
+    backgroundColor: '#4170be',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    gap: 8,
   },
-  container: {
-    padding: 20,
-    paddingBottom: 40,
+  backButton: {
+    padding: 4,
   },
-  title: {
+  backArrow: {
+    fontSize: 40,
+    color: '#fff',
+    lineHeight: 40,
+    marginTop: -4,
+  },
+  headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-    marginTop: 40,
+    color: '#fff',
+  },
+  sheet: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    paddingBottom: 40,
   },
   subtitle: {
     fontSize: 16,
@@ -245,12 +270,13 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 20,
+    marginBottom: 24,
   },
   fieldContainer: {
     gap: 8,
   },
   label: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#333',
   },
@@ -274,53 +300,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  button: {
-    backgroundColor: '#178fe5',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+  helpContainer: {
+    backgroundColor: '#f5f5f5',
+    padding: 16,
     borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 12,
   },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
+  helpTitle: {
+    fontSize: 15,
     fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
   },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#178fe5',
-    marginTop: 0,
-  },
-  secondaryButtonText: {
-    color: '#178fe5',
-  },
-  turnCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    gap: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  helpText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
   },
   statusBadge: {
     backgroundColor: '#E8F5E9',
     paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     borderRadius: 20,
     alignSelf: 'flex-start',
+    marginBottom: 16,
   },
   statusText: {
     color: '#4CAF50',
     fontSize: 14,
     fontWeight: '600',
+  },
+  turnCard: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 32,
   },
   detailRow: {
     flexDirection: 'row',
@@ -337,26 +350,40 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  buttonContainerCard: {
+  divider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 8,
+  },
+  buttonContainer: {
     gap: 12,
-    marginTop: 8,
   },
-  helpContainer: {
-    backgroundColor: '#E3F2FD',
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 20,
+  button: {
+    backgroundColor: '#000',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 16,
+    alignItems: 'center',
   },
-  helpTitle: {
-    fontSize: 14,
+  buttonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: '600',
-    color: '#1565C0',
-    marginBottom: 8,
   },
-  helpText: {
-    fontSize: 14,
-    color: '#1565C0',
-    lineHeight: 20,
+  secondaryButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#000',
+  },
+  secondaryButtonText: {
+    color: '#000',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
-

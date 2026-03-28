@@ -41,18 +41,15 @@ const generateDays = (): { label: string; value: string; isToday: boolean }[] =>
 // Generar todos los horarios desde 8:00 hasta 22:00 en intervalos de 30 min
 const generateAllHours = (): { label: string; value: string; minutes: number }[] => {
   const hours: { label: string; value: string; minutes: number }[] = [];
-  for (let h = 8; h <= 22; h++) {
+  for (let h = 9; h <= 21; h++) {
     const hour = h.toString().padStart(2, '0');
-    hours.push({ 
-      label: `${hour}:00`, 
-      value: `${hour}:00`,
-      minutes: h * 60 // minutos desde medianoche
-    });
-    if (h < 22) {
-      hours.push({ 
-        label: `${hour}:30`, 
-        value: `${hour}:30`,
-        minutes: h * 60 + 30
+    const slots = h < 21 ? [0, 15, 30, 45] : [0];
+    for (const min of slots) {
+      const minute = min.toString().padStart(2, '0');
+      hours.push({
+        label: `${hour}:${minute}`,
+        value: `${hour}:${minute}`,
+        minutes: h * 60 + min,
       });
     }
   }
@@ -67,10 +64,9 @@ const getCurrentMinutes = (): number => {
 
 // Duraciones disponibles
 const DURATIONS = [
+  { label: '15', value: 15 },
   { label: '30', value: 30 },
   { label: '60', value: 60 },
-  { label: '90', value: 90 },
-  { label: '120', value: 120 },
 ];
 
 // Espacios de lavado disponibles
@@ -204,10 +200,10 @@ const wheelStyles = StyleSheet.create({
     left: 4,
     right: 4,
     height: ITEM_HEIGHT,
-    backgroundColor: 'rgba(23, 143, 229, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: 'rgba(23, 143, 229, 0.3)',
+    borderColor: 'rgba(0, 0, 0, 0.2)',
     zIndex: 1,
   },
   gradientTop: {
@@ -241,7 +237,6 @@ export default function CircleBookingSelector({
   const [durationIndex, setDurationIndex] = useState(
     DURATIONS.findIndex(d => d.value === defaultDuration) || 1
   );
-  const [espacioIndex, setEspacioIndex] = useState(0);
 
   // Usar ref para evitar loop infinito
   const onChangeRef = useRef(onChange);
@@ -278,14 +273,13 @@ export default function CircleBookingSelector({
         date: DAYS[dayIndex].value,
         time: availableHours[hourIndex].value,
         duration: DURATIONS[durationIndex].value,
-        espacio: ESPACIOS[espacioIndex].value,
+        espacio: 1,
       });
     }
-  }, [dayIndex, hourIndex, durationIndex, espacioIndex, availableHours]);
+  }, [dayIndex, hourIndex, durationIndex, availableHours]);
 
   const handleDaySelect = useCallback((index: number) => {
     setDayIndex(index);
-    // Resetear hora al cambiar de día para evitar índices inválidos
     setHourIndex(0);
   }, []);
 
@@ -295,10 +289,6 @@ export default function CircleBookingSelector({
 
   const handleDurationSelect = useCallback((index: number) => {
     setDurationIndex(index);
-  }, []);
-
-  const handleEspacioSelect = useCallback((index: number) => {
-    setEspacioIndex(index);
   }, []);
 
   // Si no hay horarios disponibles para hoy
@@ -311,7 +301,6 @@ export default function CircleBookingSelector({
         <Text style={styles.headerLabel}>Día de la semana</Text>
         <Text style={styles.headerLabel}>Hora de inicio</Text>
         <Text style={styles.headerLabel}>Duración (minutos)</Text>
-        <Text style={styles.headerLabel}>Espacio de lavado</Text>
       </View>
 
       {/* Ruedas */}
@@ -350,16 +339,6 @@ export default function CircleBookingSelector({
           selectedIndex={durationIndex}
           onSelect={handleDurationSelect}
         />
-
-        {/* Separador */}
-        <View style={styles.separator} />
-
-        {/* Rueda de espacio de lavado */}
-        <WheelPicker
-          data={ESPACIOS}
-          selectedIndex={espacioIndex}
-          onSelect={handleEspacioSelect}
-        />
       </View>
 
       {/* Resumen de selección */}
@@ -367,7 +346,7 @@ export default function CircleBookingSelector({
         <Text style={styles.summaryText}>
           {noHoursAvailable 
             ? 'Seleccioná otro día'
-            : `${DAYS[dayIndex].label} • ${availableHours[hourIndex]?.label || ''} • ${DURATIONS[durationIndex].label} min • Espacio ${ESPACIOS[espacioIndex].label}`
+            : `${DAYS[dayIndex].label} • ${availableHours[hourIndex]?.label || ''} • ${DURATIONS[durationIndex].label} min`
           }
         </Text>
       </View>
@@ -400,7 +379,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '600',
-    color: '#178fe5',
+    color: '#000',
   },
   wheelsContainer: {
     flexDirection: 'row',
@@ -425,7 +404,7 @@ const styles = StyleSheet.create({
   },
   noHoursSubtext: {
     fontSize: 12,
-    color: '#178fe5',
+    color: '#000',
     marginTop: 8,
   },
   summary: {
@@ -437,7 +416,7 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: 16,
-    color: '#178fe5',
+    color: '#000',
     fontWeight: '600',
     textAlign: 'center',
   },

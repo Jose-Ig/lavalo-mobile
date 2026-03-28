@@ -1,61 +1,69 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Linking } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-const WHATSAPP_NUMBER = '543425145633';
+export default function HomeScreen({ navigation, route }: Props) {
+  const insets = useSafeAreaInsets();
+  const toastMessage = route.params?.toast;
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const toastTranslateY = useRef(new Animated.Value(20)).current;
 
-export default function HomeScreen({ navigation }: Props) {
-  const handleWhatsAppPress = () => {
-    const message = 'Hola, tengo un problema y necesito ayuda';
-    const url = `whatsapp://send?phone=${WHATSAPP_NUMBER}&text=${encodeURIComponent(message)}`;
-    Linking.openURL(url).catch(() => {
-      // Si no tiene WhatsApp instalado, abrir en web
-      Linking.openURL(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`);
+  useEffect(() => {
+    if (!toastMessage) return;
+
+    Animated.parallel([
+      Animated.timing(toastOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.timing(toastTranslateY, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start(() => {
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(toastOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
+          Animated.timing(toastTranslateY, { toValue: 20, duration: 400, useNativeDriver: true }),
+        ]).start();
+      }, 2500);
     });
-  };
+  }, [toastMessage]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <Image
-        source={require('../assets/lavalo_logo.png')}
+        source={require('../assets/logo.png')}
         style={styles.logo}
         resizeMode="contain"
       />
-      <Text style={styles.subtitle}>
-        Si querés a tu auto, lavalo vos
-      </Text>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity
-          style={styles.button}
+          style={styles.actionButton}
           onPress={() => navigation.navigate('ChooseDate')}
+          activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Quiero una reserva</Text>
+          <Text style={styles.actionButtonText}>Quiero una reserva</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.button}
+          style={styles.actionButton}
           onPress={() => navigation.navigate('HaveTurn')}
+          activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Tengo una reserva</Text>
+          <Text style={styles.actionButtonText}>Tengo una reserva</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Botón WhatsApp flotante */}
-      <TouchableOpacity
-        style={styles.whatsappButton}
-        onPress={handleWhatsAppPress}
-        activeOpacity={0.8}
-      >
-        <Image
-          source={require('../assets/whatsapp_icon.png')}
-          style={styles.whatsappIcon}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
+      {toastMessage && (
+        <Animated.View
+          style={[
+            styles.toast,
+            { bottom: insets.bottom + 80, opacity: toastOpacity, transform: [{ translateY: toastTranslateY }] },
+          ]}
+        >
+          <Text style={styles.toastText}>{toastMessage}</Text>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -63,57 +71,54 @@ export default function HomeScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fbfaf9',
+    backgroundColor: '#4170be',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: 24,
   },
   logo: {
-    width: '100%',
-    height: 311,
-    marginBottom: 16,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 40,
-    textAlign: 'center',
-    lineHeight: 24,
+    width: '96%',
+    height: 192,
+    marginBottom: 48,
   },
   buttonContainer: {
     width: '100%',
     gap: 16,
   },
-  button: {
-    backgroundColor: '#178fe5',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  whatsappButton: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#29a71a',
+  actionButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#000',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    width: '100%',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '600',
+    letterSpacing: 0.15,
+  },
+  toast: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
     elevation: 8,
   },
-  whatsappIcon: {
-    width: 35,
-    height: 35,
+  toastText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

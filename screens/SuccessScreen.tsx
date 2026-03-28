@@ -1,71 +1,122 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Success'>;
 
-export default function SuccessScreen({ navigation }: Props) {
+const formatDate = (dateString: string): string => {
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  return `${dayNames[date.getDay()]} ${date.getDate()} de ${monthNames[date.getMonth()]}`;
+};
+
+export default function SuccessScreen({ navigation, route }: Props) {
+  const { date, time } = route.params;
+  const insets = useSafeAreaInsets();
+  const scale = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 3,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <View style={styles.iconContainer}>
-        <Image
-          source={require('../assets/success_icon.png')}
-          style={styles.icon}
-          resizeMode="contain"
-        />
+    <View style={styles.root}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <Text style={styles.headerTitle}>Reserva Confirmada</Text>
       </View>
 
-      <Text style={styles.title}>¡Reserva Confirmada!</Text>
-      <Text style={styles.subtitle}>
-        Tu reserva ha sido exitosa. Te enviamos los detalles por whatsapp.
-      </Text>
+      <View style={styles.sheet}>
+        <View style={styles.content}>
+          <Animated.View style={[styles.iconContainer, { transform: [{ scale }] }]}>
+            <Image
+              source={require('../assets/success_icon.png')}
+              style={styles.icon}
+              resizeMode="contain"
+            />
+          </Animated.View>
 
-      <View style={styles.detailsCard}>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Fecha</Text>
-          <Text style={styles.detailValue}>15 de Enero, 2025</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Hora</Text>
-          <Text style={styles.detailValue}>10:00 AM</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Código</Text>
-          <Text style={styles.detailValue}>#LAV-001234</Text>
+          <Text style={styles.title}>¡Tu reserva fue confirmada!</Text>
+          <Text style={styles.subtitle}>
+            Te enviamos los detalles por WhatsApp.
+          </Text>
+
+          <View style={styles.detailsCard}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Fecha</Text>
+              <Text style={styles.detailValue}>{formatDate(date)}</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Hora</Text>
+              <Text style={styles.detailValue}>{time} hs</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Código</Text>
+              <Text style={styles.detailValue}>#LAV-001234</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Estación asignada</Text>
+              <Text style={styles.detailValue}>Estación 1</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <Text style={styles.buttonText}>Volver al Inicio</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('Home')}
-      >
-        <Text style={styles.buttonText}>Volver al Inicio</Text>
-      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: '#fbfaf9',
+    backgroundColor: '#4170be',
+  },
+  header: {
+    backgroundColor: '#4170be',
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  sheet: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+  },
+  content: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: 24,
   },
   iconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#E8F5E9',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 24,
   },
   icon: {
-    width: 60,
-    height: 60,
+    width: 120,
+    height: 120,
   },
   title: {
     fontSize: 28,
@@ -83,38 +134,42 @@ const styles = StyleSheet.create({
   },
   detailsCard: {
     width: '100%',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 16,
     padding: 20,
     marginBottom: 32,
-    gap: 12,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 4,
   },
   detailLabel: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#666',
   },
   detailValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#333',
   },
+  divider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 10,
+  },
   button: {
-    backgroundColor: '#178fe5',
+    backgroundColor: '#000',
     paddingVertical: 16,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: 16,
     width: '100%',
     alignItems: 'center',
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
 });
-

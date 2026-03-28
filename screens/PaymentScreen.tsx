@@ -1,168 +1,166 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Payment'>;
 
-// Función para formatear la fecha
 const formatDate = (dateString: string): string => {
-  // Parsear la fecha como local (no UTC) agregando la hora T12:00:00
   const [year, month, day] = dateString.split('-').map(Number);
-  const date = new Date(year, month - 1, day); // month es 0-indexed
-  
+  const date = new Date(year, month - 1, day);
   const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-  
-  const dayName = dayNames[date.getDay()];
-  const dayNum = date.getDate();
-  const monthName = monthNames[date.getMonth()];
-  
-  return `${dayName} ${dayNum} de ${monthName}`;
+  return `${dayNames[date.getDay()]} ${date.getDate()} de ${monthNames[date.getMonth()]}`;
 };
 
-// Calcular precio basado en duración
 const calculatePrice = (duration: number): number => {
-  const pricePerHour = 5000; // $5000 por hora
+  const pricePerHour = 5000;
   return (duration / 60) * pricePerHour;
 };
 
 export default function PaymentScreen({ navigation, route }: Props) {
   const { reservation } = route.params;
   const total = calculatePrice(reservation.duration);
-
-  const handlePaymentSuccess = () => {
-    navigation.navigate('Success');
-  };
-
-  const handlePaymentError = () => {
-    navigation.navigate('Error');
-  };
+  const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Pago</Text>
-      <Text style={styles.subtitle}>Confirmá los datos y completá el pago</Text>
-
-      {/* Resumen de la reserva */}
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Resumen de tu reserva</Text>
-        
-        {/* Datos del turno */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Turno</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Día</Text>
-            <Text style={styles.summaryValue}>{formatDate(reservation.date)}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Hora de inicio</Text>
-            <Text style={styles.summaryValue}>{reservation.time} hs</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Duración</Text>
-            <Text style={styles.summaryValue}>{reservation.duration} minutos</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Espacio de lavado</Text>
-            <Text style={styles.summaryValue}>Espacio {reservation.espacio}</Text>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        {/* Datos personales */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Datos de contacto</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Nombre</Text>
-            <Text style={styles.summaryValue}>{reservation.nombre}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Teléfono</Text>
-            <Text style={styles.summaryValue}>{reservation.telefono}</Text>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        {/* Datos del vehículo */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Vehículo</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Modelo</Text>
-            <Text style={styles.summaryValue}>{reservation.modelo}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Patente</Text>
-            <Text style={styles.summaryValue}>{reservation.patente}</Text>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        {/* Total */}
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Total a pagar</Text>
-          <Text style={styles.totalValue}>${total.toLocaleString('es-AR')}</Text>
-        </View>
-      </View>
-
-      {/* Placeholder de integración de pago */}
-      <View style={styles.placeholder}>
-        <Text style={styles.placeholderText}>💳 Integración de pago aquí</Text>
-      </View>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handlePaymentSuccess}
-        >
-          <Text style={styles.buttonText}>Confirmar y Pagar</Text>
+    <View style={styles.root}>
+      {/* Header azul */}
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.7}>
+          <Text style={styles.backArrow}>{'‹'}</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.errorButton]}
-          onPress={handlePaymentError}
-        >
-          <Text style={styles.buttonText}>Simular Error</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Pago</Text>
       </View>
-    </ScrollView>
+
+      {/* Sheet blanco */}
+      <View style={styles.sheet}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Resumen de la reserva */}
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>Resumen de tu reserva</Text>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Turno</Text>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Día</Text>
+                <Text style={styles.summaryValue}>{formatDate(reservation.date)}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Hora de inicio</Text>
+                <Text style={styles.summaryValue}>{reservation.time} hs</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Duración</Text>
+                <Text style={styles.summaryValue}>{reservation.duration} minutos</Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Datos de contacto</Text>
+              {reservation.nombre ? (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Nombre</Text>
+                  <Text style={styles.summaryValue}>{reservation.nombre}</Text>
+                </View>
+              ) : null}
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Teléfono</Text>
+                <Text style={styles.summaryValue}>{reservation.telefono}</Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Vehículo</Text>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Modelo</Text>
+                <Text style={styles.summaryValue}>{reservation.modelo}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Patente</Text>
+                <Text style={styles.summaryValue}>{reservation.patente}</Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Total a pagar</Text>
+              <Text style={styles.totalValue}>${total.toLocaleString('es-AR')}</Text>
+            </View>
+          </View>
+
+          {/* Placeholder integración de pago */}
+          <View style={styles.placeholder}>
+            <Text style={styles.placeholderText}>💳 Integración de pago aquí</Text>
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Success', { reservation, date: reservation.date, time: reservation.time })}>
+              <Text style={styles.buttonText}>Confirmar y Pagar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.button, styles.errorButton]} onPress={() => navigation.navigate('Error')}>
+              <Text style={styles.buttonText}>Simular Error</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
+  root: {
     flex: 1,
-    backgroundColor: '#fbfaf9',
+    backgroundColor: '#4170be',
   },
-  container: {
+  header: {
+    backgroundColor: '#4170be',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    gap: 8,
+  },
+  backButton: {
+    padding: 4,
+  },
+  backArrow: {
+    fontSize: 40,
+    color: '#fff',
+    lineHeight: 40,
+    marginTop: -4,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  sheet: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+  },
+  scrollContent: {
     padding: 20,
     paddingBottom: 40,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-    marginTop: 40,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 24,
-  },
   summaryCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f8f8',
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
   },
   summaryTitle: {
     fontSize: 18,
@@ -176,7 +174,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#178fe5',
+    color: '#000',
     marginBottom: 4,
   },
   summaryRow: {
@@ -186,11 +184,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   summaryLabel: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#666',
   },
   summaryValue: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
     color: '#333',
     maxWidth: '60%',
@@ -215,7 +213,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#178fe5',
+    color: '#000',
   },
   placeholder: {
     width: '100%',
@@ -234,18 +232,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   button: {
-    backgroundColor: '#178fe5',
+    backgroundColor: '#000',
     paddingVertical: 16,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
+    marginTop: 4,
   },
   errorButton: {
     backgroundColor: '#FF3B30',
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
 });
