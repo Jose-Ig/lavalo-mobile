@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Linking } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -10,6 +10,8 @@ import HomeScreen from './screens/HomeScreen';
 import ChooseDateScreen from './screens/ChooseDateScreen';
 import ReservationFormScreen from './screens/ReservationFormScreen';
 import PaymentScreen from './screens/PaymentScreen';
+import CheckoutStatusScreen from './screens/CheckoutStatusScreen';
+import { loadCheckoutSession } from './src/services/checkoutSession';
 import SuccessScreen from './screens/SuccessScreen';
 import ErrorScreen from './screens/ErrorScreen';
 import HaveTurnScreen from './screens/HaveTurnScreen';
@@ -82,6 +84,7 @@ export type RootStackParamList = {
     | { flowType?: 'reservation'; booking: BookingData; subscriptionBooking?: undefined }
     | { flowType: 'subscription'; subscriptionBooking: SubscriptionBooking; booking?: undefined };
   Payment: { reservation: ReservationData };
+  CheckoutStatus: undefined;
   Success: { reservation: ReservationData; date: string; time: string };
   Error: undefined;
   HaveTurn: undefined;
@@ -99,7 +102,22 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function App() {
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer linking={{
+        prefixes: ['uash://'],
+        config: { screens: { CheckoutStatus: 'checkout/result' } },
+        async getInitialURL() {
+          const url = await Linking.getInitialURL();
+          if (url?.split('?')[0] === 'uash://checkout/result') return 'uash://checkout/result';
+          try { if (await loadCheckoutSession()) return 'uash://checkout/result'; } catch {}
+          return null;
+        },
+        subscribe(listener) {
+          const sub = Linking.addEventListener('url', ({ url }) => {
+            if (url.split('?')[0] === 'uash://checkout/result') listener('uash://checkout/result');
+          });
+          return () => sub.remove();
+        },
+      }}>
         <StatusBar style="auto" />
         <View style={styles.container}>
           <Stack.Navigator
@@ -137,6 +155,7 @@ export default function App() {
           component={PaymentScreen}
           options={{ headerShown: false, animation: 'slide_from_bottom' }}
         />
+        <Stack.Screen name="CheckoutStatus" component={CheckoutStatusScreen} options={{ title: 'Mi pago', headerBackVisible: false }} />
         <Stack.Screen
           name="Success"
           component={SuccessScreen}

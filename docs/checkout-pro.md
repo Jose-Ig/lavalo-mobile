@@ -29,3 +29,16 @@ No se crean aplicaciones, credenciales, usuarios ni webhooks en la cuenta durant
 
 Fuentes: https://www.mercadopago.com/developers/es/docs/checkout-pro-preferences/create-payment-preference
 https://www.mercadopago.com/developers/es/docs/checkout-pro-preferences/mobile-integration/react-native-expo-go
+
+## Uso en mobile
+`Tengo una reserva` abre el estado guardado. La app recupera esa pantalla al reiniciar.
+El token se guarda con expo-secure-store y no viaja en el deep link; web no dispone de este flujo seguro.
+Después de crear la reserva, pulsar Preparar checkout abre Mercado Pago. Volver no significa pagar.
+El estado se actualiza al enfocar, volver del navegador, reactivar la app y durante un minuto en primer plano.
+Un pago rechazado permite continuar la misma preferencia antes del vencimiento.
+La sesión se conserva para consultar el pago; para reservar de nuevo se cancela la reserva pendiente o se archiva un resultado final/vencido.
+El historial permite volver a consultar hasta 20 reservas en el mismo dispositivo.
+Los plugins y scheme requieren una nueva development build para validar el retorno real en iOS y Android.
+No se crearon ni configuraron recursos en Mercado Pago. Pasos 6 y 7 siguen pendientes para el usuario.
+
+Para compilar Expo SDK 54 usá Node >=20.19.4 (el Node global actual es más antiguo).

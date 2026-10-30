@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   Animated,
   ScrollView,
 } from 'react-native';
@@ -50,11 +49,7 @@ export default function SubscriptionSuccessScreen({ navigation, route }: Props) 
           showsVerticalScrollIndicator={false}
         >
           <Animated.View style={[styles.iconWrap, { transform: [{ scale }] }]}>
-            <Image
-              source={require('../assets/success_icon.png')}
-              style={styles.icon}
-              resizeMode="contain"
-            />
+            <Text style={{ fontSize: 28, fontWeight: '700', color: '#4170be' }} accessibilityLabel="✓">✓</Text>
           </Animated.View>
 
           <Text style={styles.title}>¡Tu suscripción está activa!</Text>

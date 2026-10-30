@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
@@ -40,11 +40,7 @@ export default function SuccessScreen({ navigation, route }: Props) {
           showsVerticalScrollIndicator={false}
         >
           <Animated.View style={[styles.iconContainer, { transform: [{ scale }] }]}>
-            <Image
-              source={require('../assets/success_icon.png')}
-              style={styles.icon}
-              resizeMode="contain"
-            />
+            <Text style={{ fontSize: 28, fontWeight: '700', color: '#4170be' }} accessibilityLabel="✓">✓</Text>
           </Animated.View>
 
           <Text style={styles.title}>¡Tu reserva fue confirmada!</Text>

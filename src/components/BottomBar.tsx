@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -38,11 +38,7 @@ export default function BottomBar() {
         onPress={() => navigation.navigate('Home')}
         activeOpacity={0.7}
       >
-        <Image
-          source={require('../../assets/home_icon.png')}
-          style={styles.barIcon}
-          resizeMode="contain"
-        />
+        <Text style={{ fontSize: 28, fontWeight: '700', color: '#fff' }} accessibilityLabel="⌂">⌂</Text>
         <Text style={styles.barLabel}>Inicio</Text>
       </TouchableOpacity>
 
@@ -51,11 +47,7 @@ export default function BottomBar() {
         onPress={handleMapsPress}
         activeOpacity={0.7}
       >
-        <Image
-          source={require('../../assets/location_icon.png')}
-          style={styles.barIcon}
-          resizeMode="contain"
-        />
+        <Text style={{ fontSize: 28, fontWeight: '700', color: '#fff' }} accessibilityLabel="⌖">⌖</Text>
         <Text style={styles.barLabel}>Donde estamos</Text>
       </TouchableOpacity>
 
@@ -64,11 +56,7 @@ export default function BottomBar() {
         onPress={handleWhatsAppPress}
         activeOpacity={0.7}
       >
-        <Image
-          source={require('../../assets/whatsapp_icon.png')}
-          style={styles.barIcon}
-          resizeMode="contain"
-        />
+        <Text style={{ fontSize: 28, fontWeight: '700', color: '#fff' }} accessibilityLabel="?">?</Text>
         <Text style={styles.barLabel}>Dudas</Text>
       </TouchableOpacity>
 
@@ -77,11 +65,7 @@ export default function BottomBar() {
         onPress={handleInstagramPress}
         activeOpacity={0.7}
       >
-        <Image
-          source={require('../../assets/about_icon.png')}
-          style={styles.barIcon}
-          resizeMode="contain"
-        />
+        <Text style={{ fontSize: 28, fontWeight: '700', color: '#fff' }} accessibilityLabel="ⓘ">ⓘ</Text>
         <Text style={styles.barLabel}>Nosotros</Text>
       </TouchableOpacity>
     </View>

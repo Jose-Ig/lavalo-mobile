@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
@@ -30,11 +30,7 @@ export default function HomeScreen({ navigation, route }: Props) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Image
-        source={require('../assets/logo.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+      <Text style={{ fontSize: 64, fontWeight: '700', color: '#fff' }} accessibilityLabel="Uash">Uash</Text>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity
@@ -47,7 +43,7 @@ export default function HomeScreen({ navigation, route }: Props) {
 
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => navigation.navigate('HaveTurn')}
+          onPress={() => navigation.navigate('CheckoutStatus')}
           activeOpacity={0.8}
         >
           <Text style={styles.actionButtonText}>Tengo una reserva</Text>

@@ -45,6 +45,8 @@ export async function cancelReservation(id: number, token: string): Promise<void
 }
 export function apiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
+    if (error.response?.status === 503) return 'No pudimos verificar el pago. Consultá nuevamente antes de pagar otra vez.';
+    if (error.response?.status === 404) return 'No encontramos la reserva o todavía no se preparó su checkout.';
     if (error.response?.status === 409) return 'Ese espacio ya no está disponible. Elegí otro turno.';
     if (error.response?.status === 400) return 'Revisá los datos y elegí un horario futuro dentro de 09:00 a 21:00.';
     if (!error.response) return 'No pudimos conectar con Uash. Revisá tu conexión e intentá nuevamente.';
@@ -52,3 +54,28 @@ export function apiErrorMessage(error: unknown): string {
   return 'No pudimos completar la operación. Intentá nuevamente.';
 }
 export default api;
+
+export interface CheckoutStatus {
+  id: number;
+  reservation_id: number;
+  amount_cents: number;
+  currency: string;
+  status: 'creating' | 'pending' | 'failed' | 'completed' | 'review' | 'refunded' | 'expired';
+  issue?: string;
+  expires_at: string;
+  checkout_url?: string;
+  reservation_status: Reservation['status'];
+  verified: boolean;
+}
+export async function startCheckout(id: number, token: string): Promise<CheckoutStatus> {
+  const response = await api.post<{ data: CheckoutStatus }>(`/reservations/${id}/checkout`, {}, {
+    headers: { Authorization: `Bearer ${token}` }, timeout: 25000,
+  });
+  return response.data.data;
+}
+export async function getCheckoutStatus(id: number, token: string): Promise<CheckoutStatus> {
+  const response = await api.get<{ data: CheckoutStatus }>(`/reservations/${id}/payment`, {
+    headers: { Authorization: `Bearer ${token}` }, timeout: 25000,
+  });
+  return response.data.data;
+}

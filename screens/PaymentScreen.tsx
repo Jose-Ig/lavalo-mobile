@@ -6,6 +6,8 @@ import type { RootStackParamList } from '../App';
 
 import { createReservation, apiErrorMessage, BookingResponse } from '../src/services/api';
 
+import { loadCheckoutSession, saveCheckoutSession } from '../src/services/checkoutSession';
+
 type Props = NativeStackScreenProps<RootStackParamList, 'Payment'>;
 
 const formatDate = (dateString: string): string => {
@@ -27,12 +29,16 @@ export default function PaymentScreen({ navigation, route }: Props) {
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const reserve = async () => {
-    if (savingRef.current || pending) return;
+    if (savingRef.current) return;
     savingRef.current = true; setSaving(true);
     try {
-      const result = await createReservation(reservation);
+      const saved = await loadCheckoutSession();
+      if (saved) { navigation.navigate('CheckoutStatus'); return; }
+      const result = pending || await createReservation(reservation);
       setPending(result);
-      Alert.alert('Reserva pendiente', 'Guardamos el turno temporalmente. MercadoPago todavía no está integrado: no se realizó ningún cobro ni se confirmó el servicio.');
+      // Persist the capability before exposing a payment URL; storage failure blocks checkout.
+      await saveCheckoutSession(result);
+      navigation.navigate('CheckoutStatus');
     } catch (error) { Alert.alert('No pudimos reservar', apiErrorMessage(error)); }
     finally { savingRef.current = false; setSaving(false); }
   };
@@ -115,13 +121,13 @@ export default function PaymentScreen({ navigation, route }: Props) {
 
           {/* Placeholder integración de pago */}
           <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>MercadoPago pendiente de integración. El importe es estimativo y no se realizará ningún cobro.</Text>
+            <Text style={styles.placeholderText}>El importe se confirma en el servidor. Continuarás al checkout de Mercado Pago para realizar el pago.</Text>
           </View>
 
           <View style={styles.buttonContainer}>
-            {pending && <Text>Reserva #{pending.data.id} pendiente. Vence: {new Date(pending.data.expires_at!).toLocaleTimeString('es-AR')}. Todavía no habilita el lavado.</Text>}
-            <TouchableOpacity style={styles.button} disabled={saving || !!pending} onPress={reserve}>
-              <Text style={styles.buttonText}>{saving ? 'Guardando…' : pending ? 'Pendiente de pago' : 'Guardar reserva pendiente'}</Text>
+            {pending && <Text>Reserva #{pending.data.id} pendiente. Vence: {new Date(pending.data.expires_at!).toLocaleTimeString('es-AR')}. El turno se confirma después de verificar el pago.</Text>}
+            <TouchableOpacity style={styles.button} disabled={saving} onPress={reserve}>
+              <Text style={styles.buttonText}>{saving ? 'Guardando…' : pending ? 'Continuar con mi reserva' : 'Continuar al pago'}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
