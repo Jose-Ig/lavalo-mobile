@@ -162,22 +162,24 @@ export default function ActiveServiceScreen({ navigation }: Props) {
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={[styles.addTimeButton, isFinished && styles.addTimeButtonDisabled]}
+              style={[styles.addTimeButton, styles.addTimeButtonEnabled]}
               onPress={() => setShowTimePicker(true)}
-              disabled={isFinished}
               activeOpacity={0.8}
             >
-              <Text style={[styles.addTimeButtonText, isFinished && styles.addTimeButtonTextDisabled]}>
+              <Text style={styles.addTimeButtonText}>
                 Necesito más tiempo
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.finishButton}
+              style={[styles.finishButton, isFinished && styles.finishButtonDisabled]}
               onPress={handleFinish}
+              disabled={isFinished}
               activeOpacity={0.8}
             >
-              <Text style={styles.finishButtonText}>Terminar</Text>
+              <Text style={[styles.finishButtonText, isFinished && styles.finishButtonTextDisabled]}>
+                Terminar
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -391,9 +393,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  addTimeButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
+  addTimeButtonEnabled: {},
   addTimeButtonText: {
     color: '#fff',
     fontSize: 18,
@@ -411,10 +411,16 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#000',
   },
+  finishButtonDisabled: {
+    borderColor: '#ccc',
+  },
   finishButtonText: {
     color: '#000',
     fontSize: 18,
     fontWeight: '600',
+  },
+  finishButtonTextDisabled: {
+    color: '#ccc',
   },
   toast: {
     position: 'absolute',

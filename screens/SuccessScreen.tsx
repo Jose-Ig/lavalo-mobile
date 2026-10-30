@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
@@ -35,7 +35,10 @@ export default function SuccessScreen({ navigation, route }: Props) {
       </View>
 
       <View style={styles.sheet}>
-        <View style={styles.content}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
           <Animated.View style={[styles.iconContainer, { transform: [{ scale }] }]}>
             <Image
               source={require('../assets/success_icon.png')}
@@ -77,7 +80,7 @@ export default function SuccessScreen({ navigation, route }: Props) {
           >
             <Text style={styles.buttonText}>Volver al Inicio</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </View>
     </View>
   );
@@ -106,10 +109,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+    paddingBottom: 40,
   },
   iconContainer: {
     marginBottom: 24,

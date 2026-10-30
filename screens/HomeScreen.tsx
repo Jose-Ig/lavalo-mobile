@@ -54,6 +54,16 @@ export default function HomeScreen({ navigation, route }: Props) {
         </TouchableOpacity>
       </View>
 
+      <TouchableOpacity
+        style={styles.subscriptionButton}
+        onPress={() => navigation.navigate('ChooseSubscription')}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.subscriptionButtonText} numberOfLines={1} adjustsFontSizeToFit>
+          Quiero una suscripción mensual
+        </Text>
+      </TouchableOpacity>
+
       {toastMessage && (
         <Animated.View
           style={[
@@ -96,6 +106,22 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   actionButtonText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '600',
+    letterSpacing: 0.15,
+  },
+  subscriptionButton: {
+    marginTop: 56,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#fff',
+    width: '100%',
+    alignItems: 'center',
+  },
+  subscriptionButtonText: {
     color: '#fff',
     fontSize: 20,
     fontWeight: '600',

@@ -20,7 +20,9 @@ import {
 type Props = NativeStackScreenProps<RootStackParamList, 'ReservationForm'>;
 
 export default function ReservationFormScreen({ navigation, route }: Props) {
-  const { booking } = route.params;
+  const isSubscription = route.params.flowType === 'subscription';
+  const booking = isSubscription ? undefined : route.params.booking;
+  const subscriptionBooking = isSubscription ? route.params.subscriptionBooking : undefined;
   const insets = useSafeAreaInsets();
 
   const [nombre, setNombre] = useState('');
@@ -65,7 +67,7 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
     const hasModelo = selectedModelo !== null;
     const hasDimensiones =
       selectedModelo?.modelo === 'Otro' ? validateDimensionesFormat(dimensionesCustom) : true;
-    return hasTelefono && hasPatente && hasModelo && hasDimensiones;
+    return nombre.trim().length >= 2 && (codigoArea + telefono).length === 10 && hasTelefono && hasPatente && patente.trim().length >= 6 && hasModelo && hasDimensiones;
   };
 
   return (
@@ -75,7 +77,9 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.7}>
           <Text style={styles.backArrow}>{'‹'}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Datos de reserva</Text>
+        <Text style={styles.headerTitle}>
+          {isSubscription ? 'Datos de suscripción' : 'Datos de reserva'}
+        </Text>
       </View>
 
       {/* Sheet blanco */}
@@ -87,6 +91,7 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          scrollEnabled={!showModeloDropdown}
         >
           <View style={styles.form}>
             {/* Nombre */}
@@ -94,13 +99,16 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
               <Text style={styles.label}>¿A nombre de quién es la reserva?</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Nombre completo"
+                placeholder="Nombre completo (obligatorio)"
                 placeholderTextColor="#999"
                 value={nombre}
+                maxLength={100}
                 onChangeText={setNombre}
               />
             </View>
 
+            {submitted && nombre.trim().length < 2 && <Text style={styles.fieldError}>Ingresá tu nombre (al menos 2 caracteres).</Text>}
+            {submitted && (codigoArea + telefono).length !== 10 && <Text style={styles.fieldError}>Área y número deben sumar 10 dígitos.</Text>}
             {/* Teléfono */}
             <View style={styles.fieldContainer}>
               <View style={styles.labelRow}>
@@ -161,6 +169,7 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
                       style={styles.dropdownScroll}
                       nestedScrollEnabled
                       keyboardShouldPersistTaps="handled"
+                      showsVerticalScrollIndicator={false}
                     >
                       {filteredModelos.slice(0, 10).map((modelo, index) => (
                         <TouchableOpacity
@@ -239,24 +248,42 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
             onPress={() => {
               setSubmitted(true);
               if (!isFormValid()) return;
-              const telefonoCompleto = `+54 ${codigoArea} ${telefono}`;
+              const telefonoCompleto = `+54${codigoArea}${telefono}`;
               const dimensiones =
                 selectedModelo?.modelo === 'Otro'
                   ? dimensionesCustom
                   : selectedModelo?.dimensiones || '';
-              navigation.navigate('Payment', {
-                reservation: {
-                  ...booking,
-                  nombre,
-                  telefono: telefonoCompleto,
-                  patente,
-                  modelo: selectedModelo?.modelo || '',
-                  dimensiones,
-                },
-              });
+              const reservationData = {
+                nombre,
+                telefono: telefonoCompleto,
+                patente,
+                modelo: selectedModelo?.modelo || '',
+                dimensiones,
+              };
+              if (isSubscription && subscriptionBooking) {
+                navigation.navigate('SubscriptionPayment', {
+                  subscriptionBooking,
+                  reservation: {
+                    ...reservationData,
+                    date: '',
+                    time: subscriptionBooking.time,
+                    duration: subscriptionBooking.duration,
+                    espacio: 1,
+                  },
+                });
+              } else if (booking) {
+                navigation.navigate('Payment', {
+                  reservation: {
+                    ...booking,
+                    ...reservationData,
+                  },
+                });
+              }
             }}
           >
-            <Text style={styles.buttonText}>Ir a Pagar</Text>
+            <Text style={styles.buttonText}>
+              {isSubscription ? 'Continuar al pago' : 'Ir a Pagar'}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -406,8 +433,8 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     marginTop: 4,
-    maxHeight: 250,
     zIndex: 1001,
+    overflow: 'hidden',
   },
   dropdownScroll: {
     maxHeight: 250,

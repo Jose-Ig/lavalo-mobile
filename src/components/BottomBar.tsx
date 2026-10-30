@@ -92,23 +92,23 @@ const styles = StyleSheet.create({
   bottomBar: {
     flexDirection: 'row',
     backgroundColor: '#000',
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: 4,
   },
   barItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 40,
     gap: 2,
   },
   barIcon: {
-    width: 32,
-    height: 32,
+    width: 24,
+    height: 24,
   },
   barLabel: {
     color: '#fff',
-    fontSize: 10,
-    letterSpacing: 0.4,
+    fontSize: 9,
+    letterSpacing: 0.3,
   },
 });

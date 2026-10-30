@@ -17,9 +17,11 @@ import ChangeTurnScreen from './screens/ChangeTurnScreen';
 import StartServiceScreen from './screens/StartServiceScreen';
 import VerifyTurnScreen from './screens/VerifyTurnScreen';
 import ActiveServiceScreen from './screens/ActiveServiceScreen';
+import ChooseSubscriptionScreen from './screens/ChooseSubscriptionScreen';
+import SubscriptionPaymentScreen from './screens/SubscriptionPaymentScreen';
+import SubscriptionSuccessScreen from './screens/SubscriptionSuccessScreen';
 import BottomBar from './src/components/BottomBar';
 
-// Tipos para los datos de reserva
 export interface BookingData {
   date: string;
   time: string;
@@ -35,11 +37,50 @@ export interface ReservationData extends BookingData {
   dimensiones: string;
 }
 
+export interface SubscriptionBooking {
+  dayOfWeek: string;
+  time: string;
+  duration: number;
+}
+
+const DAY_OF_WEEK_MAP: Record<string, number> = {
+  Domingo: 0, Lunes: 1, Martes: 2, Miércoles: 3,
+  Jueves: 4, Viernes: 5, Sábado: 6,
+};
+
+/** Cuenta cuántas veces aparece `dayName` en el mes `month` del año `year` (month 0-indexed). */
+export function countDayInMonth(dayName: string, year?: number, month?: number): number {
+  const today = new Date();
+  const y = year ?? today.getFullYear();
+  const m = month ?? today.getMonth();
+  const targetDay = DAY_OF_WEEK_MAP[dayName] ?? 1;
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  let count = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    if (new Date(y, m, d).getDay() === targetDay) count++;
+  }
+  return count;
+}
+
+export interface SubscriptionReservationData {
+  nombre: string;
+  telefono: string;
+  patente: string;
+  modelo: string;
+  dimensiones: string;
+  date: string;
+  time: string;
+  duration: number;
+  espacio: number;
+}
+
 // Definición de tipos para las rutas del Stack Navigator
 export type RootStackParamList = {
   Home: { toast?: string } | undefined;
   ChooseDate: undefined;
-  ReservationForm: { booking: BookingData };
+  ReservationForm:
+    | { flowType?: 'reservation'; booking: BookingData; subscriptionBooking?: undefined }
+    | { flowType: 'subscription'; subscriptionBooking: SubscriptionBooking; booking?: undefined };
   Payment: { reservation: ReservationData };
   Success: { reservation: ReservationData; date: string; time: string };
   Error: undefined;
@@ -48,6 +89,9 @@ export type RootStackParamList = {
   StartService: undefined;
   VerifyTurn: undefined;
   ActiveService: undefined;
+  ChooseSubscription: undefined;
+  SubscriptionPayment: { subscriptionBooking: SubscriptionBooking; reservation: SubscriptionReservationData };
+  SubscriptionSuccess: { subscriptionBooking: SubscriptionBooking; renewalDay: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -135,6 +179,21 @@ export default function App() {
               name="ActiveService"
               component={ActiveServiceScreen}
               options={{ headerShown: false, animation: 'slide_from_bottom' }}
+            />
+            <Stack.Screen
+              name="ChooseSubscription"
+              component={ChooseSubscriptionScreen}
+              options={{ headerShown: false, animation: 'slide_from_bottom' }}
+            />
+            <Stack.Screen
+              name="SubscriptionPayment"
+              component={SubscriptionPaymentScreen}
+              options={{ headerShown: false, animation: 'slide_from_bottom' }}
+            />
+            <Stack.Screen
+              name="SubscriptionSuccess"
+              component={SubscriptionSuccessScreen}
+              options={{ headerShown: false, headerBackVisible: false, animation: 'slide_from_bottom' }}
             />
           </Stack.Navigator>
           <BottomBar />

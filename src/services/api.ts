@@ -1,178 +1,54 @@
 import axios from 'axios';
+import type { ReservationData } from '../../App';
 
-// Base URL del API - configurar según el ambiente
-const API_BASE_URL = 'https://api.lavalo.com'; // TODO: Configurar URL real
-
-// Crear instancia de axios con configuración base
+// On a physical phone use the LAN address of the development computer.
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api/v1',
   timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
-
-// Interceptor para agregar token de autenticación
-api.interceptors.request.use(
-  (config) => {
-    // TODO: Obtener token de almacenamiento seguro
-    const token = null; // AsyncStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+export interface Slot { id: number; label: string; is_available: boolean }
+export interface Reservation {
+  id: number;
+  slot_id: number;
+  start_time: string;
+  end_time: string;
+  duration_minutes: number;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  expires_at?: string;
+}
+export interface BookingResponse { data: Reservation; access_token: string }
+// The business operates in Argentina (UTC-03:00). Device timezone must not shift a booking.
+export const bookingStart = (date: string, time: string) => `${date}T${time}:00-03:00`;
+export async function getAvailableSlots(date: string, time: string, duration: number): Promise<Slot[]> {
+  const response = await api.get<{ data: Slot[] }>('/available-slots', {
+    params: { start_time: bookingStart(date, time), duration_minutes: duration },
+  });
+  return response.data.data;
+}
+export async function createReservation(r: ReservationData): Promise<BookingResponse> {
+  const response = await api.post<BookingResponse>('/reservations', {
+    slot_id: r.espacio, start_time: bookingStart(r.date, r.time),
+    duration_minutes: r.duration, name: r.nombre, phone: r.telefono,
+    vehicle_plate: r.patente, vehicle_model: r.modelo,
+  });
+  return response.data;
+}
+export async function getReservation(id: number, token: string): Promise<Reservation> {
+  const response = await api.get<{ data: Reservation }>(`/reservations/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data.data;
+}
+export async function cancelReservation(id: number, token: string): Promise<void> {
+  await api.delete(`/reservations/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+}
+export function apiErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    if (error.response?.status === 409) return 'Ese espacio ya no está disponible. Elegí otro turno.';
+    if (error.response?.status === 400) return 'Revisá los datos y elegí un horario futuro dentro de 09:00 a 21:00.';
+    if (!error.response) return 'No pudimos conectar con Uash. Revisá tu conexión e intentá nuevamente.';
   }
-);
-
-// Interceptor para manejar respuestas y errores
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // TODO: Manejar errores globales (401, 500, etc.)
-    console.error('API Error:', error);
-    return Promise.reject(error);
-  }
-);
-
-// ============================================
-// Servicios de Turnos
-// ============================================
-
-export interface Turno {
-  id: string;
-  fecha: string;
-  hora: string;
-  servicio: string;
-  estado: 'pendiente' | 'confirmado' | 'completado' | 'cancelado';
-  codigo: string;
+  return 'No pudimos completar la operación. Intentá nuevamente.';
 }
-
-export interface DatosReserva {
-  nombre: string;
-  telefono: string;
-  email: string;
-  patente: string;
-  fecha: string;
-  hora: string;
-  servicioId: string;
-}
-
-// Placeholder: Obtener fechas disponibles
-export const getFechasDisponibles = async (mes: string): Promise<string[]> => {
-  // TODO: Implementar llamada real
-  // return api.get(`/turnos/fechas?mes=${mes}`);
-  console.log('API: getFechasDisponibles', mes);
-  return ['2025-01-15', '2025-01-16', '2025-01-17'];
-};
-
-// Placeholder: Obtener horarios disponibles para una fecha
-export const getHorariosDisponibles = async (fecha: string): Promise<string[]> => {
-  // TODO: Implementar llamada real
-  // return api.get(`/turnos/horarios?fecha=${fecha}`);
-  console.log('API: getHorariosDisponibles', fecha);
-  return ['09:00', '10:00', '11:00', '14:00', '15:00'];
-};
-
-// Placeholder: Crear reserva
-export const crearReserva = async (datos: DatosReserva): Promise<Turno> => {
-  // TODO: Implementar llamada real
-  // return api.post('/turnos', datos);
-  console.log('API: crearReserva', datos);
-  return {
-    id: '123',
-    fecha: datos.fecha,
-    hora: datos.hora,
-    servicio: 'Lavado Completo',
-    estado: 'pendiente',
-    codigo: 'LAV-001234',
-  };
-};
-
-// Placeholder: Obtener turno por código
-export const getTurnoPorCodigo = async (codigo: string): Promise<Turno | null> => {
-  // TODO: Implementar llamada real
-  // return api.get(`/turnos/codigo/${codigo}`);
-  console.log('API: getTurnoPorCodigo', codigo);
-  return {
-    id: '123',
-    fecha: '2025-01-15',
-    hora: '10:00',
-    servicio: 'Lavado Completo',
-    estado: 'confirmado',
-    codigo: codigo,
-  };
-};
-
-// Placeholder: Cambiar turno
-export const cambiarTurno = async (
-  turnoId: string,
-  nuevaFecha: string,
-  nuevaHora: string
-): Promise<Turno> => {
-  // TODO: Implementar llamada real
-  // return api.put(`/turnos/${turnoId}`, { fecha: nuevaFecha, hora: nuevaHora });
-  console.log('API: cambiarTurno', turnoId, nuevaFecha, nuevaHora);
-  return {
-    id: turnoId,
-    fecha: nuevaFecha,
-    hora: nuevaHora,
-    servicio: 'Lavado Completo',
-    estado: 'confirmado',
-    codigo: 'LAV-001234',
-  };
-};
-
-// Placeholder: Cancelar turno
-export const cancelarTurno = async (turnoId: string): Promise<void> => {
-  // TODO: Implementar llamada real
-  // return api.delete(`/turnos/${turnoId}`);
-  console.log('API: cancelarTurno', turnoId);
-};
-
-// Placeholder: Iniciar servicio (escaneo QR)
-export const iniciarServicio = async (codigo: string): Promise<Turno> => {
-  // TODO: Implementar llamada real
-  // return api.post(`/turnos/iniciar`, { codigo });
-  console.log('API: iniciarServicio', codigo);
-  return {
-    id: '123',
-    fecha: '2025-01-15',
-    hora: '10:00',
-    servicio: 'Lavado Completo',
-    estado: 'completado',
-    codigo: codigo,
-  };
-};
-
-// ============================================
-// Servicios de Pago
-// ============================================
-
-export interface DatosPago {
-  turnoId: string;
-  monto: number;
-  metodoPago: string;
-}
-
-export interface ResultadoPago {
-  exito: boolean;
-  transaccionId?: string;
-  mensaje: string;
-}
-
-// Placeholder: Procesar pago
-export const procesarPago = async (datos: DatosPago): Promise<ResultadoPago> => {
-  // TODO: Implementar integración con pasarela de pago
-  console.log('API: procesarPago', datos);
-  return {
-    exito: true,
-    transaccionId: 'TXN-123456',
-    mensaje: 'Pago procesado exitosamente',
-  };
-};
-
 export default api;
-

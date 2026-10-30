@@ -15,7 +15,7 @@ export interface BookingSelection {
 
 interface CircleBookingSelectorProps {
   defaultDuration?: number;
-  onChange?: (selection: BookingSelection) => void;
+  onChange?: (selection: BookingSelection | null) => void;
 }
 
 // Generar próximos 8 días (hoy + 7)
@@ -31,7 +31,7 @@ const generateDays = (): { label: string; value: string; isToday: boolean }[] =>
     const dayName = i === 0 ? 'Hoy' : dayNames[date.getDay()];
     days.push({
       label: i === 0 ? `Hoy ${dayNum}` : `${dayName} ${dayNum}`,
-      value: date.toISOString().split('T')[0],
+      value: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
       isToday: i === 0,
     });
   }
@@ -90,39 +90,21 @@ interface WheelPickerProps<T> {
 
 function WheelPicker<T>({ data, selectedIndex, onSelect }: WheelPickerProps<T>) {
   const scrollViewRef = useRef<ScrollView>(null);
-  const [isScrolling, setIsScrolling] = useState(false);
+  const momentumActive = useRef(false);
 
   useEffect(() => {
-    // Scroll inicial al elemento seleccionado
-    if (scrollViewRef.current && !isScrolling) {
-      scrollViewRef.current.scrollTo({
-        y: selectedIndex * ITEM_HEIGHT,
-        animated: false,
-      });
-    }
-  }, [selectedIndex, isScrolling]);
-
-  const handleScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    const index = Math.round(offsetY / ITEM_HEIGHT);
-    const clampedIndex = Math.max(0, Math.min(index, data.length - 1));
-    
-    setIsScrolling(false);
-    
-    if (clampedIndex !== selectedIndex) {
-      onSelect(clampedIndex, data[clampedIndex].value);
-    }
-    
-    // Asegurar que quede centrado
-    scrollViewRef.current?.scrollTo({
-      y: clampedIndex * ITEM_HEIGHT,
-      animated: true,
-    });
-  }, [data, selectedIndex, onSelect]);
-
-  const handleScrollBegin = useCallback(() => {
-    setIsScrolling(true);
+    scrollViewRef.current?.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: false });
   }, []);
+
+  const snapToIndex = useCallback(
+    (offsetY: number) => {
+      const index = Math.max(0, Math.min(Math.round(offsetY / ITEM_HEIGHT), data.length - 1));
+      if (!data.length) return;
+      onSelect(index, data[index].value);
+      scrollViewRef.current?.scrollTo({ y: index * ITEM_HEIGHT, animated: true });
+    },
+    [data, onSelect]
+  );
 
   return (
     <View style={wheelStyles.container}>
@@ -136,19 +118,22 @@ function WheelPicker<T>({ data, selectedIndex, onSelect }: WheelPickerProps<T>) 
       <ScrollView
         ref={scrollViewRef}
         style={wheelStyles.scrollView}
-        contentContainerStyle={{
-          paddingVertical: ITEM_HEIGHT * 2,
-        }}
+        contentContainerStyle={{ paddingVertical: ITEM_HEIGHT * 2 }}
         showsVerticalScrollIndicator={false}
         snapToInterval={ITEM_HEIGHT}
         decelerationRate="fast"
-        onScrollBeginDrag={handleScrollBegin}
-        onMomentumScrollEnd={handleScrollEnd}
+        scrollEventThrottle={16}
+        nestedScrollEnabled
+        onMomentumScrollBegin={() => { momentumActive.current = true; }}
+        onMomentumScrollEnd={(e) => {
+          momentumActive.current = false;
+          snapToIndex(e.nativeEvent.contentOffset.y);
+        }}
         onScrollEndDrag={(e) => {
-          // Si no hay momentum, manejar aquí
-          if (e.nativeEvent.velocity?.y === 0) {
-            handleScrollEnd(e);
-          }
+          const offsetY = e.nativeEvent.contentOffset.y;
+          setTimeout(() => {
+            if (!momentumActive.current) snapToIndex(offsetY);
+          }, 60);
         }}
       >
         {data.map((item, index) => {
@@ -235,7 +220,7 @@ export default function CircleBookingSelector({
   const [dayIndex, setDayIndex] = useState(0);
   const [hourIndex, setHourIndex] = useState(0);
   const [durationIndex, setDurationIndex] = useState(
-    DURATIONS.findIndex(d => d.value === defaultDuration) || 1
+    Math.max(0, DURATIONS.findIndex(d => d.value === defaultDuration))
   );
 
   // Usar ref para evitar loop infinito
@@ -248,7 +233,7 @@ export default function CircleBookingSelector({
     
     if (!isToday) {
       // Si no es hoy, todos los horarios están disponibles
-      return ALL_HOURS;
+      return ALL_HOURS.filter(hour => hour.minutes + DURATIONS[durationIndex].value <= 21 * 60);
     }
     
     // Si es hoy, filtrar horarios pasados
@@ -256,8 +241,8 @@ export default function CircleBookingSelector({
     // Agregar 30 minutos de margen para dar tiempo a llegar
     const minMinutes = currentMinutes + 30;
     
-    return ALL_HOURS.filter(hour => hour.minutes >= minMinutes);
-  }, [dayIndex]);
+    return ALL_HOURS.filter(hour => hour.minutes >= minMinutes && hour.minutes + DURATIONS[durationIndex].value <= 21 * 60);
+  }, [dayIndex, durationIndex]);
 
   // Ajustar hourIndex cuando cambian los horarios disponibles
   useEffect(() => {
@@ -275,7 +260,7 @@ export default function CircleBookingSelector({
         duration: DURATIONS[durationIndex].value,
         espacio: 1,
       });
-    }
+    } else { onChangeRef.current?.(null); }
   }, [dayIndex, hourIndex, durationIndex, availableHours]);
 
   const handleDaySelect = useCallback((index: number) => {

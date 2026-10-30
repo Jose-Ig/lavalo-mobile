@@ -116,7 +116,7 @@ export default function StartServiceScreen({ navigation }: Props) {
               <Text style={styles.buttonText}>Iniciar</Text>
             </TouchableOpacity>
             <Text style={styles.warningText}>
-              Una vez iniciado el servicio, no podrá pausarse ni cancelarse.
+              Una vez iniciado el servicio, no podrá pausarse.
             </Text>
           </View>
         </ScrollView>
