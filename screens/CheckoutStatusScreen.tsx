@@ -16,6 +16,13 @@ const messages: Record<string, string> = {
   refunded: 'El pago fue devuelto o tuvo un contracargo. Consultanos para conocer el detalle.',
   review: 'Recibimos un pago que requiere revisión. Contactanos indicando el número de reserva.',
 };
+function paymentMessage(status: CheckoutStatus, confirmed: boolean): string {
+  if (confirmed) return 'Tu pago fue aprobado y tu turno está confirmado.';
+  if (status.issue === 'legacy_preferences') return 'Esta reserva usa un checkout anterior. Si todavía no pagaste, cancelala y creá otra. Si ya pagaste, contactanos antes de volver a pagar.';
+  if (status.issue === 'order_canceled') return 'La orden de pago fue cancelada. Cancelá esta reserva antes de elegir otro turno.';
+  if (status.reservation_status === 'cancelled' && !['review', 'refunded'].includes(status.status)) return 'Esta reserva fue cancelada. Si pagaste, contactanos indicando su número.';
+  return messages[status.status] || 'Consultá el estado para conocer el resultado.';
+}
 export default function CheckoutStatusScreen({ navigation }: Props) {
   const [session, setSession] = useState<CheckoutSession | null>(null);
   const [status, setStatus] = useState<CheckoutStatus | null>(null);
@@ -96,7 +103,7 @@ export default function CheckoutStatusScreen({ navigation }: Props) {
       <Text style={styles.title}>{confirmed ? '¡Reserva confirmada!' : 'Estado de tu pago'}</Text>
       {session && <Text style={styles.text}>Reserva #{session.booking.data.id}</Text>}
       {status && <>
-        <Text style={styles.text}>{confirmed ? 'El backend verificó tu pago aprobado.' : messages[status.status] || 'Consultá el estado para conocer el resultado.'}</Text>
+        <Text style={styles.text}>{paymentMessage(status, confirmed)}</Text>
         <Text style={styles.text}>Total: ${(status.amount_cents / 100).toLocaleString('es-AR')} {status.currency}</Text>
         {session && <Text style={styles.text}>Turno: {new Date(session.booking.data.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba' })}</Text>}
       </>}
@@ -104,7 +111,7 @@ export default function CheckoutStatusScreen({ navigation }: Props) {
       <TouchableOpacity style={styles.button} disabled={busy} onPress={() => void refresh()}><Text style={styles.label}>{busy ? 'Consultando…' : 'Actualizar estado'}</Text></TouchableOpacity>
       {canPay && <TouchableOpacity style={styles.button} disabled={busy} onPress={() => void pay()}><Text style={styles.label}>Continuar en Mercado Pago</Text></TouchableOpacity>}
       {session && !status && <TouchableOpacity style={styles.button} disabled={busy} onPress={() => void pay()}><Text style={styles.label}>Preparar checkout</Text></TouchableOpacity>}
-      {session && (!status || (status.reservation_status === 'pending' && !['completed', 'review'].includes(status.status))) &&
+      {session && (!status || (status.reservation_status === 'pending' && (!['completed', 'review'].includes(status.status) || status.issue === 'legacy_preferences'))) &&
         <TouchableOpacity style={styles.secondary} disabled={busy} onPress={() => Alert.alert('Cancelar reserva', 'El turno se libera. Si ya pagaste, consultá el estado antes de cancelar.', [{ text: 'Volver', style: 'cancel' }, { text: 'Cancelar reserva', style: 'destructive', onPress: () => void release() }])}><Text>Cancelar reserva</Text></TouchableOpacity>}
       {session && status && (confirmed || ['refunded', 'expired'].includes(status.status) || status.reservation_status === 'cancelled') &&
         <TouchableOpacity style={styles.secondary} disabled={busy} onPress={() => { void clearCheckoutSession().then(() => navigation.navigate('ChooseDate')).catch(() => setMessage('No pudimos guardar el cambio. Reintentá.')); }}><Text>Hacer otra reserva (conservar comprobante)</Text></TouchableOpacity>}
