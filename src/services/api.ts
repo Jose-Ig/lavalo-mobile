@@ -47,6 +47,7 @@ export async function cancelReservation(id: number, token: string): Promise<void
 }
 export function apiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
+    if (error.response?.data?.code === 'payment_provider_authorization') return 'No pudimos abrir Mercado Pago. El servicio de pagos requiere revisión. Contactanos para recibir ayuda.';
     if (error.response?.status === 503) return 'No pudimos verificar el pago. Consultá nuevamente antes de pagar otra vez.';
     if (error.response?.status === 404) return 'No encontramos la reserva o todavía no se preparó su checkout.';
     if (error.response?.status === 409) return 'Ese espacio ya no está disponible. Elegí otro turno.';
