@@ -9,6 +9,7 @@ const api = axios.create({
 });
 export interface Slot { id: number; label: string; is_available: boolean }
 export interface Reservation {
+  reservation_number: string;
   id: number;
   email?: string;
   whatsapp_opt_in?: boolean;
@@ -57,6 +58,7 @@ export function apiErrorMessage(error: unknown): string {
 export default api;
 
 export interface CheckoutStatus {
+  reservation_number: string;
   simulated?: boolean;
   confirmation_code?: string;
   notification_status?: string;
@@ -85,22 +87,23 @@ export async function getCheckoutStatus(id: number, token: string): Promise<Chec
 }
 
 export interface ReservationAccess {
+ reservation_number: string; reservation_date: string;
  id: number; code: string; slot_id: number; slot_label: string;
  start_time: string; end_time: string; duration_minutes: number;
  status: Reservation['status']; can_verify_qr: boolean; activation_reason: string;
  qr_verified_at?: string; activation_status: 'not_started' | 'awaiting_controller';
 }
-export async function lookupReservationCode(code: string): Promise<ReservationAccess> {
- const result = await api.post<{ data: ReservationAccess }>('/reservations/lookup', { code });
+export async function lookupReservationCode(code: string, date: string): Promise<ReservationAccess> {
+ const result = await api.post<{ data: ReservationAccess }>('/reservations/lookup', { code, date });
  return result.data.data;
 }
-export async function verifyReservationSlot(code: string, qr: string): Promise<ReservationAccess> {
- const result = await api.post<{ data: ReservationAccess }>('/reservations/verify-slot', { code, qr });
+export async function verifyReservationSlot(code: string, qr: string, date: string): Promise<ReservationAccess> {
+ const result = await api.post<{ data: ReservationAccess }>('/reservations/verify-slot', { code, qr, date });
  return result.data.data;
 }
 export function reservationAccessError(error: unknown): string {
  if (axios.isAxiosError(error)) {
-  if (error.response?.status === 404) return 'No encontramos una reserva con ese código. Revisá cómo lo escribiste.';
+  if (error.response?.status === 404) return 'No encontramos una reserva con ese código y fecha. Revisá ambos datos.';
   if (error.response?.status === 429) return 'Esperá un minuto antes de intentar nuevamente.';
   if (error.response?.status === 409) return 'Verificá el espacio asignado y el horario de tu turno. La reserva debe estar confirmada.';
   if (error.response?.status === 400) return 'El QR no corresponde a un espacio de Uash.';

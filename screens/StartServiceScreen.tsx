@@ -22,7 +22,7 @@ export default function StartServiceScreen({ navigation }: Props) {
     if (!access || lock.current) return;
     lock.current = true; setBusy(true); setError('');
     try {
-      const current = await lookupReservationCode(access.code); setAccess({ code: access.code, reservation: current });
+      const current = await lookupReservationCode(access.code, access.reservation.reservation_date); setAccess({ code: access.code, reservation: current });
       if (!current.can_verify_qr) { setError('El pago debe estar confirmado y tenés que estar dentro del horario de tu turno.'); return; }
       const result = permission?.granted ? permission : await requestPermission();
       if (!result.granted) { setError('Necesitamos acceso a la cámara para leer el QR del espacio.'); return; }
@@ -33,7 +33,7 @@ export default function StartServiceScreen({ navigation }: Props) {
   const scanned = async (qr: string) => {
     if (!access || lock.current) return;
     lock.current = true; setBusy(true); setScanning(false); setError('');
-    try { const result = await verifyReservationSlot(access.code, qr); setAccess({ code: access.code, reservation: result }); }
+    try { const result = await verifyReservationSlot(access.code, qr, access.reservation.reservation_date); setAccess({ code: access.code, reservation: result }); }
     catch (error) { setError(reservationAccessError(error)); }
     finally { lock.current = false; setBusy(false); }
   };

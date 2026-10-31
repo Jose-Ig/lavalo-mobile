@@ -13,6 +13,11 @@ export default function HaveTurnScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { setAccess } = useReservationAccess();
   const [code, setCode] = useState('');
+  const [date, setDate] = useState(() => {
+    const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Argentina/Cordoba', day: '2-digit', month: '2-digit', year: 'numeric' }).formatToParts(new Date());
+    const part = (type: string) => parts.find(item => item.type === type)!.value;
+    return `${part('day')}/${part('month')}/${part('year')}`;
+  });
   const [reservation, setReservation] = useState<ReservationAccess | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -20,9 +25,13 @@ export default function HaveTurnScreen({ navigation }: Props) {
   const lookup = async () => {
     if (lock.current) return;
     if (!code.trim()) { setError('Ingresá tu código de reserva.'); return; }
+    const [day, month, year] = date.split('/');
+    const parsedDate = new Date(Number(year), Number(month) - 1, Number(day), 12);
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(date) || parsedDate.getFullYear() !== Number(year) || parsedDate.getMonth() !== Number(month) - 1 || parsedDate.getDate() !== Number(day)) { setError('Ingresá la fecha del turno como DD/MM/AAAA.'); return; }
+    const dateValue = `${year}-${month}-${day}`;
     lock.current = true; setBusy(true); setError(''); setReservation(null); setAccess(null); Keyboard.dismiss();
     try {
-      const result = await lookupReservationCode(code);
+      const result = await lookupReservationCode(code, dateValue);
       setReservation(result); setAccess({ code: result.code, reservation: result });
     } catch (error) { setError(reservationAccessError(error)); }
     finally { lock.current = false; setBusy(false); }
@@ -32,16 +41,22 @@ export default function HaveTurnScreen({ navigation }: Props) {
     <KeyboardAvoidingView style={styles.sheet} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
-          <View style={styles.section}><Text style={styles.title} accessibilityRole="header">Buscá tu reserva</Text><Text style={styles.text}>Ingresá el código que recibiste al confirmar tu reserva. Podés consultar cualquier reserva, desde cualquier dispositivo.</Text></View>
+          <View style={styles.section}><Text style={styles.title} accessibilityRole="header">Buscá tu reserva</Text><Text style={styles.text}>Ingresá el código y la fecha de tu turno. Podés consultar cualquier reserva, desde cualquier dispositivo.</Text></View>
           <View style={styles.section}><Text style={styles.label}>Código de reserva</Text>
-            <TextInput accessibilityLabel="Código de reserva" value={code} editable={!busy} autoCapitalize="characters" autoCorrect={false} maxLength={40} placeholder="UASH-XXXX-XXXX-XXXX-XXXX" placeholderTextColor="#687991" style={styles.input}
+            <TextInput accessibilityLabel="Código de reserva" value={code} editable={!busy} autoCapitalize="characters" autoCorrect={false} maxLength={40} placeholder="123456" placeholderTextColor="#687991" style={styles.input}
               onChangeText={text => { setCode(text.toUpperCase()); setError(''); setReservation(null); setAccess(null); }} returnKeyType="search" onSubmitEditing={() => void lookup()} />
-            <Text style={styles.hint}>También lo encontrás en la confirmación del pago.</Text>
+            <Text style={styles.hint}>6 números. Los códigos anteriores también siguen funcionando.</Text>
+          </View>
+          <View style={styles.section}><Text style={styles.label}>Fecha del turno</Text>
+            <TextInput accessibilityLabel="Fecha del turno, día mes y año" editable={!busy} value={date} placeholder="DD/MM/AAAA" placeholderTextColor="#687991" keyboardType="number-pad" maxLength={10} style={styles.input}
+              onChangeText={text => { const digits = text.replace(/\D/g, '').slice(0, 8); setDate(digits.length > 4 ? `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}` : digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits); setError(''); setReservation(null); setAccess(null); }} />
+            <Text style={styles.hint}>Usá la fecha de la reserva, aunque la hayas comprado otro día.</Text>
           </View>
           {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
           <ActionButton surface="light" label={busy ? 'Buscando…' : 'Consultar reserva'} disabled={busy} onPress={() => void lookup()} />
           {reservation && <View style={styles.card}>
             <Text style={styles.label}>{reservation.status === 'confirmed' ? 'Reserva confirmada' : 'Estado de la reserva'}</Text>
+            <Text style={styles.text}>Reserva {reservation.reservation_number}</Text>
             <Text selectable style={styles.code}>{reservation.code}</Text>
             <Text style={styles.text}>{new Date(reservation.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</Text>
             <Text style={styles.text}>{reservation.duration_minutes} minutos · {reservation.slot_label}</Text>
