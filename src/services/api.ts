@@ -57,6 +57,7 @@ export function apiErrorMessage(error: unknown): string {
 export default api;
 
 export interface CheckoutStatus {
+  simulated?: boolean;
   confirmation_code?: string;
   notification_status?: string;
   id: number;

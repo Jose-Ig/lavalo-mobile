@@ -14,19 +14,19 @@ import { homeTheme as colors } from '../src/theme/home';
 type Props = NativeStackScreenProps<RootStackParamList, 'CheckoutStatus'>;
 type Stage = 'loading' | 'ready' | 'known' | 'error' | 'empty';
 const messages: Record<string, string> = {
-  creating: 'Estamos preparando tu pago. Consultá el estado antes de volver a intentar.',
+  creating: 'Estamos preparando tu pago. El estado se actualizará automáticamente.',
   pending: 'Podés continuar en Mercado Pago. El turno se confirma al verificar la aprobación.',
   failed: 'El pago no se completó. Si el turno sigue vigente, podés volver al checkout.',
-  expired: 'La retención del turno venció. Si pagaste, consultá nuevamente antes de reservar otro turno.',
+  expired: 'La retención del turno venció. Si pagaste, esperá la actualización antes de reservar otro turno.',
   refunded: 'El pago fue devuelto o tuvo un contracargo. Contactanos para conocer el detalle.',
   review: 'Este pago requiere revisión. Contactanos indicando el número de reserva.',
 };
 function paymentMessage(status: CheckoutStatus): string {
-  if (status.status === 'completed' && status.verified && status.reservation_status === 'confirmed') return 'Tu pago fue aprobado y tu turno está confirmado.';
+  if (status.status === 'completed' && status.verified && status.reservation_status === 'confirmed') return status.simulated ? 'Pago de prueba exitoso. Tu turno está confirmado; no se realizó ningún cobro.' : 'Tu pago fue aprobado y tu turno está confirmado.';
   if (status.issue === 'legacy_preferences') return 'Esta reserva usa un checkout anterior. Si no pagaste, podés cancelarla y elegir otro turno. Si pagaste, contactanos antes de volver a pagar.';
   if (status.issue === 'order_canceled') return 'La orden de pago de esta reserva fue cancelada. Cancelá la reserva antes de elegir otro turno.';
   if (status.reservation_status === 'cancelled' && !['review', 'refunded'].includes(status.status)) return 'Esta reserva está cancelada.';
-  return messages[status.status] || 'Consultá el estado para conocer el resultado.';
+  return messages[status.status] || 'Esperando la confirmación del pago.';
 }
 export default function CheckoutStatusScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
@@ -113,7 +113,8 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
       if (!valid()) return;
       if (result.reservation_id !== booking.data.id) throw new Error('Reservation mismatch');
       setStatus(result); setStage('known');
-      if (!result.checkout_url) { setMessage('Este turno ya no admite iniciar un pago. Consultá su estado.'); return; }
+      if (result.simulated && result.status === 'completed') { setMessage(''); return; }
+      if (!result.checkout_url) { setMessage('Este turno ya no admite iniciar un pago. Esperá la actualización del estado.'); return; }
       setMessage(''); await WebBrowser.openBrowserAsync(result.checkout_url);
     } catch (error) { if (valid()) setActionError(apiErrorMessage(error)); }
     finally { if (valid()) { lock.current = false; setBusy(false); void refresh(); } }
@@ -134,7 +135,7 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
     const turn = new Date(booking.data.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
     Alert.alert(
       '¿Cancelar esta reserva?',
-      `Se liberará tu turno del ${turn}. Esta acción no se puede deshacer.\n\nSi ya pagaste, conservá la reserva y consultá el estado del pago antes de cancelar.`,
+      `Se liberará tu turno del ${turn}. Esta acción no se puede deshacer.`,
       [
         { text: 'Conservar reserva', style: 'cancel', isPreferred: true },
         { text: 'Cancelar reserva', style: 'destructive', onPress: () => void release() },
@@ -145,7 +146,7 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
   const confirmed = !!status && status.verified && status.status === 'completed' && status.reservation_status === 'confirmed';
   const canPay = stage === 'ready' || (stage === 'known' && !confirmed && status?.reservation_status === 'pending' && !!status.checkout_url);
   const reservation = session?.booking.data;
-  const canCancel = !!reservation && reservation.status === 'pending' && (stage === 'ready' || (stage === 'known' && status && (!['completed', 'review'].includes(status.status) || status.issue === 'legacy_preferences')));
+  const canCancel = !confirmed && !!reservation && reservation.status === 'pending' && status?.reservation_status !== 'confirmed' && status?.reservation_status !== 'completed' && (stage === 'ready' || (stage === 'known' && status && (!['completed', 'review'].includes(status.status) || status.issue === 'legacy_preferences')));
   const canCreate = stage === 'empty' || (stage === 'known' && (confirmed || reservation?.status === 'cancelled' || status?.status === 'expired' || status?.status === 'refunded' || (!status && !!reservation?.expires_at && Date.parse(reservation.expires_at) <= Date.now())));
   const heading = confirmed ? '¡Reserva confirmada!' : canPay ? null : stage === 'loading' ? 'Consultando tu reserva' : stage === 'empty' ? 'Tus reservas' : 'Estado de tu pago';
   return <View style={styles.root}>
@@ -180,7 +181,6 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
           </View>
         </View>}
         <View style={styles.actions}>
-          {!!session && <ActionButton surface="light" label={busy ? 'Consultando…' : 'Consultar estado'} disabled={busy} onPress={() => { setActionError(''); void refresh(); }} />}
           {canCancel && <ActionButton surface="light" variant="danger" label="Cancelar reserva" disabled={busy} onPress={confirmCancellation} />}
           {canCreate && <ActionButton surface="light" label="Hacer otra reserva" disabled={busy} onPress={() => { void clearCheckoutSession(reservation?.id).then(() => navigation.navigate('ChooseDate')).catch(() => setMessage('No pudimos guardar el cambio. Reintentá.')); }} />}
           <ActionButton surface="light" variant="secondary" label="Volver al inicio" disabled={busy} onPress={() => navigation.navigate('Home')} />
