@@ -14,6 +14,7 @@ export interface BookingSelection {
 }
 
 interface CircleBookingSelectorProps {
+  initialSelection?: BookingSelection;
   defaultDuration?: number;
   onChange?: (selection: BookingSelection | null) => void;
 }
@@ -214,13 +215,19 @@ const wheelStyles = StyleSheet.create({
 });
 
 export default function CircleBookingSelector({
+  initialSelection,
   defaultDuration = 60,
   onChange,
 }: CircleBookingSelectorProps) {
-  const [dayIndex, setDayIndex] = useState(0);
-  const [hourIndex, setHourIndex] = useState(0);
+  const [dayIndex, setDayIndex] = useState(() => Math.max(0, DAYS.findIndex(day => day.value === initialSelection?.date)));
+  const [hourIndex, setHourIndex] = useState(() => {
+    if (!initialSelection) return 0;
+    const day = DAYS.find(day => day.value === initialSelection.date) || DAYS[0];
+    const hours = ALL_HOURS.filter(hour => hour.minutes + initialSelection.duration <= 21 * 60 && (!day.isToday || hour.minutes >= getCurrentMinutes() + 30));
+    return Math.max(0, hours.findIndex(hour => hour.value === initialSelection.time));
+  });
   const [durationIndex, setDurationIndex] = useState(
-    Math.max(0, DURATIONS.findIndex(d => d.value === defaultDuration))
+    Math.max(0, DURATIONS.findIndex(d => d.value === (initialSelection?.duration || defaultDuration)))
   );
 
   // Usar ref para evitar loop infinito

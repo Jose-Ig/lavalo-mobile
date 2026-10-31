@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 import ActionButton from '../src/components/ActionButton';
+import ReservationEditor from '../src/components/ReservationEditor';
 import { createReservation, apiErrorMessage, type BookingResponse } from '../src/services/api';
 import { loadCheckoutSession, saveCheckoutSession } from '../src/services/checkoutSession';
 import { homeTheme as colors } from '../src/theme/home';
@@ -18,6 +19,7 @@ function Detail({ label, value }: { label: string; value: string }) {
 }
 export default function PaymentScreen({ navigation, route }: Props) {
   const { reservation } = route.params;
+  const [editing, setEditing] = useState<'turn' | 'contact' | null>(null);
   const [pending, setPending] = useState<BookingResponse | null>(null);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
@@ -47,13 +49,13 @@ export default function PaymentScreen({ navigation, route }: Props) {
         <View style={styles.content}>
           <View style={styles.intro}><Text style={styles.title} accessibilityRole="header">Revisá tu reserva</Text><Text style={styles.description}>Confirmá los datos antes de continuar al pago.</Text></View>
           <View style={styles.turnCard}>
-            <Text style={styles.cardTitle} accessibilityRole="header">Tu turno</Text>
+            <View style={styles.cardHeader}><Text style={styles.cardTitle} accessibilityRole="header">Tu turno</Text><Pressable accessibilityRole="button" accessibilityLabel="Editar turno" disabled={saving || !!pending} onPress={() => setEditing('turn')} style={styles.edit}><Text style={[styles.editLabel, (saving || !!pending) && styles.editDisabled]}>Editar</Text></Pressable></View>
             <Text style={styles.date}>{formatDate(reservation.date)}</Text>
             <View style={styles.badges}><Text style={styles.badge}>{reservation.time} hs</Text><Text style={styles.badge}>{reservation.duration} minutos</Text></View>
             <Detail label="Espacio" value={reservation.espacioLabel || `Espacio ${reservation.espacio}`} />
           </View>
           <View style={styles.card}>
-            <Text style={styles.cardTitle} accessibilityRole="header">Contacto</Text>
+            <View style={styles.cardHeader}><Text style={styles.cardTitle} accessibilityRole="header">Contacto</Text><Pressable accessibilityRole="button" accessibilityLabel="Editar contacto" disabled={saving || !!pending} onPress={() => setEditing('contact')} style={styles.edit}><Text style={[styles.editLabel, (saving || !!pending) && styles.editDisabled]}>Editar</Text></Pressable></View>
             <Detail label="Nombre" value={reservation.nombre} />
             <Detail label="WhatsApp" value={reservation.telefono} />
             {!!reservation.email && <Detail label="Email" value={reservation.email} />}
@@ -75,6 +77,7 @@ export default function PaymentScreen({ navigation, route }: Props) {
         </View>
       </ScrollView>
     </View>
+    {editing && <ReservationEditor section={editing} value={reservation} onClose={() => setEditing(null)} onSave={updated => { navigation.setParams({ reservation: updated }); setEditing(null); }} />}
   </View>;
 }
 const styles = StyleSheet.create({
@@ -91,6 +94,10 @@ const styles = StyleSheet.create({
   description: { fontSize: 15, lineHeight: 22, color: colors.label },
   turnCard: { backgroundColor: '#EFF4FC', borderRadius: 24, borderWidth: 1, borderColor: '#DCE6F7', padding: 20, gap: 14 },
   card: { backgroundColor: '#FAFBFE', borderRadius: 24, borderWidth: 1, borderColor: '#E1E7F1', padding: 20, gap: 14 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  edit: { minHeight: 48, minWidth: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  editLabel: { color: colors.blue, fontSize: 15, fontWeight: '600' },
+  editDisabled: { color: '#71809A' },
   cardTitle: { color: colors.ink, fontSize: 18, lineHeight: 26, fontWeight: '700' },
   date: { color: colors.ink, fontSize: 20, lineHeight: 28, fontWeight: '600', textTransform: 'capitalize' },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
