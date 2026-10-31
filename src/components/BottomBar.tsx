@@ -33,10 +33,10 @@ export default function BottomBar({ activeRoute = 'Home' }: { activeRoute?: stri
     {items.map(item => <Pressable key={item.icon} accessibilityRole="button" accessibilityLabel={item.label} accessibilityHint={item.hint}
       accessibilityState={item.active ? { selected: true } : undefined} onPress={item.onPress}
       android_ripple={{ color: '#CFDAEE', borderless: false }} style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
-      <View style={[styles.indicator, item.active && styles.selected]}>
+      <View style={styles.indicator}>
         <NavIcon name={item.icon} color={item.active ? colors.ink : colors.label} size={24} />
       </View>
-      <Text style={[styles.label, item.active && styles.selectedLabel]} maxFontSizeMultiplier={1.3}>{item.label}</Text>
+      <Text style={[styles.label, item.active && styles.selectedLabel]} maxFontSizeMultiplier={1.3}>{item.icon === 'pin' ? 'Dónde\nestamos' : item.label}</Text>
     </Pressable>)}
   </View>;
   if (IOS) return <View style={[styles.iosContainer, { paddingBottom: Math.max(insets.bottom, 12), backgroundColor: activeRoute === 'Home' ? colors.blue : '#FBFAF9' }]}>
@@ -49,11 +49,10 @@ const styles = StyleSheet.create({
   iosContainer: { paddingTop: 12, paddingHorizontal: 16 },
   shadow: { borderRadius: 36, shadowColor: '#102D58', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.16, shadowRadius: 18 },
   glass: { borderRadius: 36, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.65)' },
-  items: { flexDirection: 'row', alignItems: 'center', minHeight: IOS ? 72 : 80, paddingHorizontal: IOS ? 6 : 8, paddingVertical: 8 },
-  item: { flex: 1, minHeight: 56, alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 24, paddingVertical: 2, overflow: 'hidden' },
+  items: { flexDirection: 'row', alignItems: 'stretch', minHeight: IOS ? 72 : 80, paddingHorizontal: IOS ? 6 : 8, paddingVertical: 8 },
+  item: { flex: 1, minHeight: 56, alignItems: 'center', justifyContent: 'flex-start', gap: 4, borderRadius: 24, paddingVertical: 2, overflow: 'hidden' },
   pressed: { opacity: 0.7 },
   indicator: { width: 60, height: 32, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  selected: { backgroundColor: IOS ? 'rgba(65,112,190,0.15)' : colors.androidIndicator },
-  label: { color: colors.label, fontSize: IOS ? 10 : 12, lineHeight: 16, fontWeight: '500', textAlign: 'center' },
+  label: { color: colors.label, fontSize: IOS ? 10 : 12, lineHeight: 16, fontWeight: '500', textAlign: 'center', minHeight: 32 },
   selectedLabel: { color: colors.ink, fontWeight: '700' },
 });
