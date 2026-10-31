@@ -16,6 +16,8 @@
     "axios": "^1.13.2",
     "babel-preset-expo": "^54.0.9",
     "expo": "~54.0.30",
+    "expo-blur": "~15.0.8",
+    "expo-glass-effect": "~0.1.10",
     "expo-secure-store": "~15.0.8",
     "expo-status-bar": "~3.0.9",
     "expo-web-browser": "~15.0.11",

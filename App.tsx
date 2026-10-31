@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet, Linking } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -11,7 +11,6 @@ import ChooseDateScreen from './screens/ChooseDateScreen';
 import ReservationFormScreen from './screens/ReservationFormScreen';
 import PaymentScreen from './screens/PaymentScreen';
 import CheckoutStatusScreen from './screens/CheckoutStatusScreen';
-import { loadCheckoutSession } from './src/services/checkoutSession';
 import SuccessScreen from './screens/SuccessScreen';
 import ErrorScreen from './screens/ErrorScreen';
 import HaveTurnScreen from './screens/HaveTurnScreen';
@@ -100,15 +99,17 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
+  const navigationRef = useNavigationContainerRef<RootStackParamList>();
+  const [activeRoute, setActiveRoute] = useState('Home');
+  const trackRoute = () => setActiveRoute(navigationRef.getCurrentRoute()?.name || 'Home');
   return (
     <SafeAreaProvider>
-      <NavigationContainer linking={{
+      <NavigationContainer ref={navigationRef} onReady={trackRoute} onStateChange={trackRoute} linking={{
         prefixes: ['uash://'],
         config: { screens: { CheckoutStatus: 'checkout/result' } },
         async getInitialURL() {
           const url = await Linking.getInitialURL();
           if (url?.split('?')[0] === 'uash://checkout/result') return 'uash://checkout/result';
-          try { if (await loadCheckoutSession()) return 'uash://checkout/result'; } catch {}
           return null;
         },
         subscribe(listener) {
@@ -118,7 +119,7 @@ export default function App() {
           return () => sub.remove();
         },
       }}>
-        <StatusBar style="auto" />
+        <StatusBar style={activeRoute === 'Home' ? 'light' : 'dark'} />
         <View style={styles.container}>
           <Stack.Navigator
             initialRouteName="Home"
@@ -215,7 +216,7 @@ export default function App() {
               options={{ headerShown: false, headerBackVisible: false, animation: 'slide_from_bottom' }}
             />
           </Stack.Navigator>
-          <BottomBar />
+          <BottomBar activeRoute={activeRoute} />
         </View>
       </NavigationContainer>
     </SafeAreaProvider>
