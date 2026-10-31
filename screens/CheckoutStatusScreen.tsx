@@ -160,6 +160,12 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
           {!!status && <Text style={styles.total}>{(status.amount_cents / 100).toLocaleString('es-AR', { style: 'currency', currency: status.currency })}</Text>}
         </View>}
         {!!status && <View style={[styles.statusCard, confirmed && styles.confirmed]}><Text style={styles.text}>{paymentMessage(status)}</Text></View>}
+        {confirmed && !!status?.confirmation_code && <View style={styles.reservationCard}>
+          <Text style={styles.cardTitle}>Tu código de reserva</Text>
+          <Text selectable style={styles.confirmationCode}>{status.confirmation_code}</Text>
+          <Text style={styles.text}>Guardalo para consultar esta reserva y validar el QR de tu espacio desde “Tengo una reserva”. Cada reserva tiene su propio código.</Text>
+          {status.notification_status === 'pending_configuration' && <Text style={styles.text}>Los envíos por email y WhatsApp todavía no están configurados. Por ahora guardá este código.</Text>}
+        </View>}
         {!!message && <Text accessibilityLiveRegion="polite" style={styles.text}>{message}</Text>}
         {!!actionError && <Text accessibilityRole="alert" style={styles.error}>{actionError}</Text>}
         {stage === 'loading' && <ActivityIndicator size="large" color={colors.blue} />}
@@ -195,6 +201,7 @@ const styles = StyleSheet.create({
   reservationCard: { padding: 20, borderRadius: 24, backgroundColor: '#EFF4FC', gap: 8 },
   cardTitle: { color: colors.ink, fontSize: 18, lineHeight: 26, fontWeight: '700' },
   text: { color: colors.label, fontSize: 16, lineHeight: 24 },
+  confirmationCode: { color: colors.ink, fontSize: 18, lineHeight: 28, fontWeight: '700', letterSpacing: 1 },
   total: { color: colors.ink, fontSize: 28, lineHeight: 36, fontWeight: '700', marginTop: 4 },
   statusCard: { padding: 20, borderRadius: 20, backgroundColor: '#F1F4F8' },
   confirmed: { backgroundColor: '#E5F5EB' },

@@ -19,6 +19,7 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
   const [step, setStep] = useState<0 | 1>(0);
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [telefono, setTelefono] = useState('');
   const [modelo, setModelo] = useState<VehicleModel | null>(null);
   const [patente, setPatente] = useState('');
@@ -60,7 +61,7 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
     if (errors.patente) { plateRef.current?.focus(); return; }
     if (errors.dimensiones) { dimensionsRef.current?.focus(); return; }
     Keyboard.dismiss();
-    const data = { nombre: nombre.trim(), email: email.trim(), telefono: `+54${telefono}`, patente, modelo: modelo!.modelo, dimensiones: modelo!.modelo === 'Otro' ? dimensiones.trim() : modelo!.dimensiones };
+    const data = { nombre: nombre.trim(), email: email.trim(), whatsappOptIn, telefono: `+54${telefono}`, patente, modelo: modelo!.modelo, dimensiones: modelo!.modelo === 'Otro' ? dimensiones.trim() : modelo!.dimensiones };
     if (isSubscription && subscriptionBooking) navigation.navigate('SubscriptionPayment', { subscriptionBooking, reservation: { ...data, date: '', time: subscriptionBooking.time, duration: subscriptionBooking.duration, espacio: 1 } });
     else if (booking) navigation.navigate('Payment', { reservation: { ...booking, ...data } });
   };
@@ -107,6 +108,10 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
               </View>
               <Text style={styles.hint}>Código de área + número, sin 0 ni 15.</Text>
               {fieldError('telefono')}
+              <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: whatsappOptIn }} onPress={() => setWhatsappOptIn(value => !value)} style={styles.optIn}>
+                <View style={[styles.checkbox, whatsappOptIn && styles.checkboxSelected]}>{whatsappOptIn && <Text style={styles.checkmark}>✓</Text>}</View>
+                <Text style={styles.optInLabel}>Quiero recibir el código y la confirmación de esta reserva por WhatsApp.</Text>
+              </Pressable>
             </View>
           </View> : <>
             <View style={styles.contactSummary}>
@@ -179,5 +184,10 @@ const styles = StyleSheet.create({
   edit: { minHeight: 48, paddingHorizontal: 8, justifyContent: 'center' },
   editLabel: { color: colors.blue, fontWeight: '600', fontSize: 15 },
   actions: { alignItems: 'center', gap: 12, paddingTop: 4 },
+  optIn: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 8 },
+  checkbox: { width: 24, height: 24, borderWidth: 1, borderColor: colors.blue, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  checkboxSelected: { backgroundColor: colors.blue },
+  checkmark: { color: '#FFFFFF', fontWeight: '700' },
+  optInLabel: { flex: 1, fontSize: 14, lineHeight: 22, color: colors.label },
   footnote: { color: colors.label, fontSize: 13, lineHeight: 20, textAlign: 'center' },
 });

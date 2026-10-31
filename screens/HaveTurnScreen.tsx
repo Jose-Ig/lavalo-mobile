@@ -1,129 +1,63 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
+import ActionButton from '../src/components/ActionButton';
+import { lookupReservationCode, reservationAccessError, type ReservationAccess } from '../src/services/api';
+import { useReservationAccess } from '../src/context/ReservationAccessContext';
+import { homeTheme as colors } from '../src/theme/home';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HaveTurn'>;
-
 export default function HaveTurnScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.root}>
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.7}>
-          <Text style={styles.backArrow}>{'‹'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mi Reserva</Text>
-      </View>
-
-      <View style={styles.sheet}>
+  const { setAccess } = useReservationAccess();
+  const [code, setCode] = useState('');
+  const [reservation, setReservation] = useState<ReservationAccess | null>(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const lock = useRef(false);
+  const lookup = async () => {
+    if (lock.current) return;
+    if (!code.trim()) { setError('Ingresá tu código de reserva.'); return; }
+    lock.current = true; setBusy(true); setError(''); setReservation(null); setAccess(null); Keyboard.dismiss();
+    try {
+      const result = await lookupReservationCode(code);
+      setReservation(result); setAccess({ code: result.code, reservation: result });
+    } catch (error) { setError(reservationAccessError(error)); }
+    finally { lock.current = false; setBusy(false); }
+  };
+  return <View style={styles.root}>
+    <View style={[styles.header, { paddingTop: insets.top + 12 }]}><Text style={styles.headerTitle}>Tengo una reserva</Text></View>
+    <KeyboardAvoidingView style={styles.sheet} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
-          <Text style={styles.subtitle}>¿Qué querés hacer con tu reserva?</Text>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => navigation.navigate('StartService')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.buttonText}>Iniciar Servicio</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => navigation.navigate('VerifyTurn')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.buttonText}>Ver datos de mi reserva</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={() => navigation.navigate('ChangeTurn')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.secondaryButtonText}>Cambiar Reserva</Text>
-            </TouchableOpacity>
+          <View style={styles.section}><Text style={styles.title} accessibilityRole="header">Buscá tu reserva</Text><Text style={styles.text}>Ingresá el código que recibiste al confirmar tu reserva. Podés consultar cualquier reserva, desde cualquier dispositivo.</Text></View>
+          <View style={styles.section}><Text style={styles.label}>Código de reserva</Text>
+            <TextInput accessibilityLabel="Código de reserva" value={code} editable={!busy} autoCapitalize="characters" autoCorrect={false} maxLength={40} placeholder="UASH-XXXX-XXXX-XXXX-XXXX" placeholderTextColor="#687991" style={styles.input}
+              onChangeText={text => { setCode(text.toUpperCase()); setError(''); setReservation(null); setAccess(null); }} returnKeyType="search" onSubmitEditing={() => void lookup()} />
+            <Text style={styles.hint}>También lo encontrás en la confirmación del pago.</Text>
           </View>
+          {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+          <ActionButton surface="light" label={busy ? 'Buscando…' : 'Consultar reserva'} disabled={busy} onPress={() => void lookup()} />
+          {reservation && <View style={styles.card}>
+            <Text style={styles.label}>{reservation.status === 'confirmed' ? 'Reserva confirmada' : 'Estado de la reserva'}</Text>
+            <Text selectable style={styles.code}>{reservation.code}</Text>
+            <Text style={styles.text}>{new Date(reservation.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</Text>
+            <Text style={styles.text}>{reservation.duration_minutes} minutos · {reservation.slot_label}</Text>
+            <Text style={styles.text}>{reservation.can_verify_qr ? 'Ya podés escanear el QR de tu espacio.' : reservation.activation_reason === 'too_early' ? 'Podrás validar el QR al comenzar el horario de tu turno.' : reservation.activation_reason === 'expired' ? 'El horario de este turno ya terminó.' : reservation.status === 'cancelled' ? 'Esta reserva está cancelada y no permite activar un espacio.' : 'Esta reserva no está habilitada para activar un espacio.'}</Text>
+            {reservation.status === 'confirmed' && <ActionButton surface="light" label="Continuar al espacio" onPress={() => navigation.navigate('StartService')} />}
+          </View>}
+          <ActionButton surface="light" variant="secondary" label="Volver al inicio" onPress={() => navigation.navigate('Home')} />
         </View>
-      </View>
-    </View>
-  );
+      </ScrollView>
+    </KeyboardAvoidingView>
+  </View>;
 }
-
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#4170be',
-  },
-  header: {
-    backgroundColor: '#4170be',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-    gap: 8,
-  },
-  backButton: {
-    padding: 4,
-  },
-  backArrow: {
-    fontSize: 40,
-    color: '#fff',
-    lineHeight: 40,
-    marginTop: -4,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  sheet: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: 'hidden',
-  },
-  content: {
-    flex: 1,
-    padding: 24,
-    justifyContent: 'center',
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#666',
-    marginBottom: 32,
-    textAlign: 'center',
-  },
-  buttonContainer: {
-    gap: 16,
-  },
-  button: {
-    backgroundColor: '#000',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#000',
-  },
-  secondaryButtonText: {
-    color: '#000',
-    fontSize: 18,
-    fontWeight: '600',
-  },
+  root: { flex: 1, backgroundColor: colors.blue }, header: { paddingHorizontal: 24, paddingBottom: 20 }, headerTitle: { color: '#FFFFFF', fontSize: 26, lineHeight: 34, fontWeight: '700' },
+  sheet: { flex: 1, backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden' }, scroll: { padding: 24, alignItems: 'center' }, content: { width: '100%', maxWidth: 480, gap: 24 },
+  section: { gap: 10 }, title: { color: colors.ink, fontSize: 24, lineHeight: 32, fontWeight: '700' }, text: { color: colors.label, fontSize: 16, lineHeight: 24 }, hint: { color: colors.label, fontSize: 13, lineHeight: 20 }, label: { color: colors.ink, fontSize: 17, lineHeight: 24, fontWeight: '600' },
+  input: { borderWidth: 1, borderColor: '#BCCCE4', borderRadius: 16, padding: 16, minHeight: 56, fontSize: 16, color: colors.ink, backgroundColor: '#F8FAFE' }, error: { color: '#AD2936', fontSize: 15, lineHeight: 22 },
+  card: { backgroundColor: '#EFF4FC', borderRadius: 24, padding: 20, gap: 16 }, code: { color: colors.ink, fontSize: 17, lineHeight: 26, fontWeight: '700', letterSpacing: 1 },
 });

@@ -11,6 +11,7 @@ export interface Slot { id: number; label: string; is_available: boolean }
 export interface Reservation {
   id: number;
   email?: string;
+  whatsapp_opt_in?: boolean;
   slot_id: number;
   start_time: string;
   end_time: string;
@@ -30,7 +31,7 @@ export async function getAvailableSlots(date: string, time: string, duration: nu
 export async function createReservation(r: ReservationData): Promise<BookingResponse> {
   const response = await api.post<BookingResponse>('/reservations', {
     slot_id: r.espacio, start_time: bookingStart(r.date, r.time),
-    duration_minutes: r.duration, name: r.nombre, email: r.email?.trim() || undefined, phone: r.telefono,
+    duration_minutes: r.duration, name: r.nombre, whatsapp_opt_in: r.whatsappOptIn === true, email: r.email?.trim() || undefined, phone: r.telefono,
     vehicle_plate: r.patente, vehicle_model: r.modelo,
   });
   return response.data;
@@ -57,6 +58,8 @@ export function apiErrorMessage(error: unknown): string {
 export default api;
 
 export interface CheckoutStatus {
+  confirmation_code?: string;
+  notification_status?: string;
   id: number;
   reservation_id: number;
   amount_cents: number;
@@ -79,4 +82,28 @@ export async function getCheckoutStatus(id: number, token: string): Promise<Chec
     headers: { Authorization: `Bearer ${token}` }, timeout: 25000,
   });
   return response.data.data;
+}
+
+export interface ReservationAccess {
+ id: number; code: string; slot_id: number; slot_label: string;
+ start_time: string; end_time: string; duration_minutes: number;
+ status: Reservation['status']; can_verify_qr: boolean; activation_reason: string;
+ qr_verified_at?: string; activation_status: 'not_started' | 'awaiting_controller';
+}
+export async function lookupReservationCode(code: string): Promise<ReservationAccess> {
+ const result = await api.post<{ data: ReservationAccess }>('/reservations/lookup', { code });
+ return result.data.data;
+}
+export async function verifyReservationSlot(code: string, qr: string): Promise<ReservationAccess> {
+ const result = await api.post<{ data: ReservationAccess }>('/reservations/verify-slot', { code, qr });
+ return result.data.data;
+}
+export function reservationAccessError(error: unknown): string {
+ if (axios.isAxiosError(error)) {
+  if (error.response?.status === 404) return 'No encontramos una reserva con ese código. Revisá cómo lo escribiste.';
+  if (error.response?.status === 429) return 'Esperá un minuto antes de intentar nuevamente.';
+  if (error.response?.status === 409) return 'Verificá el espacio asignado y el horario de tu turno. La reserva debe estar confirmada.';
+  if (error.response?.status === 400) return 'El QR no corresponde a un espacio de Uash.';
+ }
+ return 'No pudimos verificar la reserva. Revisá la conexión e intentá nuevamente.';
 }

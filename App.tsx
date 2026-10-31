@@ -22,6 +22,7 @@ import ChooseSubscriptionScreen from './screens/ChooseSubscriptionScreen';
 import SubscriptionPaymentScreen from './screens/SubscriptionPaymentScreen';
 import SubscriptionSuccessScreen from './screens/SubscriptionSuccessScreen';
 import BottomBar from './src/components/BottomBar';
+import { ReservationAccessProvider } from './src/context/ReservationAccessContext';
 
 export interface BookingData {
   espacioLabel?: string;
@@ -34,6 +35,7 @@ export interface BookingData {
 export interface ReservationData extends BookingData {
   nombre: string;
   email?: string;
+  whatsappOptIn?: boolean;
   telefono: string;
   patente: string;
   modelo: string;
@@ -68,6 +70,7 @@ export function countDayInMonth(dayName: string, year?: number, month?: number):
 export interface SubscriptionReservationData {
   nombre: string;
   email?: string;
+  whatsappOptIn?: boolean;
   telefono: string;
   patente: string;
   modelo: string;
@@ -107,6 +110,7 @@ export default function App() {
   const trackRoute = () => setActiveRoute(navigationRef.getCurrentRoute()?.name || 'Home');
   return (
     <SafeAreaProvider>
+      <ReservationAccessProvider>
       <NavigationContainer ref={navigationRef} onReady={trackRoute} onStateChange={trackRoute} linking={{
         prefixes: ['uash://'],
         config: { screens: { CheckoutStatus: 'checkout/result' } },
@@ -222,6 +226,7 @@ export default function App() {
           <BottomBar activeRoute={activeRoute} />
         </View>
       </NavigationContainer>
+    </ReservationAccessProvider>
     </SafeAreaProvider>
   );
 }
