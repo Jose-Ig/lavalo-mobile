@@ -8,7 +8,7 @@ import * as WebBrowser from 'expo-web-browser';
 import type { RootStackParamList } from '../App';
 import ActionButton from '../src/components/ActionButton';
 import { apiErrorMessage, cancelReservation, getCheckoutStatus, getReservation, startCheckout, type CheckoutStatus } from '../src/services/api';
-import { checkoutHistory, clearCheckoutSession, loadCheckoutSession, type CheckoutSession } from '../src/services/checkoutSession';
+import { clearCheckoutSession, loadCheckoutSession, type CheckoutSession } from '../src/services/checkoutSession';
 import { homeTheme as colors } from '../src/theme/home';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CheckoutStatus'>;
@@ -36,8 +36,6 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
   const [message, setMessage] = useState('');
   const [actionError, setActionError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [history, setHistory] = useState<number[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
   const selectedID = useRef<number | undefined>(route.params?.reservationId);
   const active = useRef(false);
   const generation = useRef(0);
@@ -52,12 +50,11 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
     const valid = () => mounted.current && epoch === generation.current;
     lock.current = true; setBusy(true);
     try {
-      const ids = await checkoutHistory();
       // An explicit reservation never falls back to a different saved payment or historical entry.
       const saved = await loadCheckoutSession(selectedID.current);
       if (!valid()) return;
-      setHistory(ids); currentSession.current = saved; setSession(saved);
-      if (!saved) { setStatus(null); setStage('empty'); setMessage('No hay una reserva activa guardada. Podés elegir una del historial o crear una nueva.'); return; }
+      currentSession.current = saved; setSession(saved);
+      if (!saved) { setStatus(null); setStage('empty'); setMessage('No hay una reserva activa guardada. Podés crear una nueva desde el inicio.'); return; }
       const reservation = await getReservation(saved.booking.data.id, saved.booking.access_token);
       if (!valid()) return;
       const updated = { booking: { ...saved.booking, data: reservation } };
@@ -70,7 +67,7 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
           // Reservation was verified above; no checkout yet is a normal pre-payment state.
           setStatus(null);
           if (reservation.status === 'pending' && reservation.expires_at && Date.parse(reservation.expires_at) > Date.now()) {
-            setStage('ready'); setMessage('Elegí una opción para abrir el checkout y completar el pago.');
+            setStage('ready'); setMessage('');
           } else {
             setStage('known'); setMessage(reservation.status === 'cancelled' ? 'Esta reserva está cancelada.' : 'La retención de este turno ya venció.');
           }
@@ -87,7 +84,7 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
   }, []);
   const selectReservation = useCallback((id?: number) => {
     generation.current++; lock.current = false; selectedID.current = id; currentSession.current = null;
-    setSession(null); setStatus(null); setStage('loading'); setMessage(''); setActionError(''); setShowHistory(false); void refresh();
+    setSession(null); setStatus(null); setStage('loading'); setMessage(''); setActionError(''); void refresh();
   }, [refresh]);
   useFocusEffect(useCallback(() => {
     active.current = true; selectReservation(route.params?.reservationId);
@@ -136,12 +133,12 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
   const reservation = session?.booking.data;
   const canCancel = !!reservation && reservation.status === 'pending' && (stage === 'ready' || (stage === 'known' && status && (!['completed', 'review'].includes(status.status) || status.issue === 'legacy_preferences')));
   const canCreate = stage === 'empty' || (stage === 'known' && (confirmed || reservation?.status === 'cancelled' || status?.status === 'expired' || status?.status === 'refunded' || (!status && !!reservation?.expires_at && Date.parse(reservation.expires_at) <= Date.now())));
-  const heading = confirmed ? '¡Reserva confirmada!' : canPay ? 'Elegí cómo pagar' : stage === 'loading' ? 'Consultando tu reserva' : stage === 'empty' ? 'Tus reservas' : 'Estado de tu pago';
+  const heading = confirmed ? '¡Reserva confirmada!' : canPay ? null : stage === 'loading' ? 'Consultando tu reserva' : stage === 'empty' ? 'Tus reservas' : 'Estado de tu pago';
   return <View style={styles.root}>
     <View style={[styles.header, { paddingTop: insets.top + 12 }]}><Text style={styles.headerTitle}>Pago</Text></View>
     <View style={styles.sheet}><ScrollView contentContainerStyle={styles.scroll}>
       <View style={styles.content}>
-        <Text style={styles.title} accessibilityRole="header">{heading}</Text>
+        {!!heading && <Text style={styles.title} accessibilityRole="header">{heading}</Text>}
         {!!reservation && <View style={styles.reservationCard}>
           <Text style={styles.cardTitle}>Reserva #{reservation.id}</Text>
           <Text style={styles.text}>{new Date(reservation.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</Text>
@@ -161,18 +158,13 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
               {busy ? <ActivityIndicator color={colors.blue} /> : <Text style={styles.methodLabel}>Pagar</Text>}
             </Pressable>
           </View>
-          <Text style={styles.hint}>Vas a completar el pago en Mercado Pago.</Text>
         </View>}
         <View style={styles.actions}>
-          {stage !== 'empty' && <ActionButton surface="light" variant="secondary" label={busy ? 'Consultando…' : 'Actualizar estado'} disabled={busy} onPress={() => void refresh()} />}
-          {canCancel && <Pressable accessibilityRole="button" disabled={busy} style={styles.textButton} onPress={() => Alert.alert('Cancelar reserva', 'El turno se libera. Si ya pagaste, consultá el estado antes de cancelar.', [{ text: 'Volver', style: 'cancel' }, { text: 'Cancelar reserva', style: 'destructive', onPress: () => void release() }])}><Text style={styles.cancelLabel}>Cancelar reserva</Text></Pressable>}
+          {canCancel && <ActionButton surface="light" variant="secondary" label="Cancelar reserva" disabled={busy} onPress={() => Alert.alert('Cancelar reserva', 'El turno se libera. Si ya pagaste, consultá el estado antes de cancelar.', [{ text: 'Volver', style: 'cancel' }, { text: 'Cancelar reserva', style: 'destructive', onPress: () => void release() }])} />}
           {canCreate && <ActionButton surface="light" label="Hacer otra reserva" disabled={busy} onPress={() => { void clearCheckoutSession(reservation?.id).then(() => navigation.navigate('ChooseDate')).catch(() => setMessage('No pudimos guardar el cambio. Reintentá.')); }} />}
-          <Pressable accessibilityRole="button" style={styles.textButton} onPress={() => navigation.navigate('Home')}><Text style={styles.link}>Volver al inicio</Text></Pressable>
+<ActionButton surface="light" variant="secondary" label="Volver al inicio" disabled={busy} onPress={() => navigation.navigate('Home')} />
         </View>
-        {history.some(id => id !== reservation?.id) && <View style={styles.history}>
-          <Pressable accessibilityRole="button" accessibilityState={{ expanded: showHistory }} style={styles.textButton} onPress={() => setShowHistory(value => !value)}><Text style={styles.link}>{showHistory ? 'Ocultar historial' : 'Ver reservas anteriores'}</Text></Pressable>
-          {showHistory && history.filter(id => id !== reservation?.id).map(id => <Pressable key={id} disabled={busy} accessibilityRole="button" style={styles.historyRow} onPress={() => selectReservation(id)}><Text style={styles.text}>Consultar reserva #{id}</Text></Pressable>)}
-        </View>}
+
       </View>
     </ScrollView></View>
   </View>;
@@ -198,11 +190,5 @@ const styles = StyleSheet.create({
   methodLabel: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '600' },
   error: { color: '#AD2936', fontSize: 15, lineHeight: 22 },
   dimmed: { opacity: 0.6 },
-  hint: { color: colors.label, fontSize: 13, lineHeight: 20 },
   actions: { alignItems: 'center', gap: 12 },
-  textButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 12 },
-  link: { color: colors.blue, fontSize: 15, lineHeight: 22, fontWeight: '600', textAlign: 'center' },
-  cancelLabel: { color: '#AD2936', fontSize: 15, lineHeight: 22, fontWeight: '600' },
-  history: { borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#DCE6F7', paddingTop: 12 },
-  historyRow: { minHeight: 56, justifyContent: 'center', padding: 16, borderRadius: 16, backgroundColor: '#F0F4FC', marginBottom: 8 },
 });

@@ -70,7 +70,6 @@ export default function PaymentScreen({ navigation, route }: Props) {
           <View style={styles.actions}>
             {pending && <Text style={styles.pending} accessibilityLiveRegion="polite">Reserva #{pending.data.id} pendiente.{pending.data.expires_at ? ` Vence a las ${new Date(pending.data.expires_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}.` : ''} Se confirma después de verificar el pago.</Text>}
             <ActionButton surface="light" label={saving ? 'Preparando reserva…' : pending ? 'Continuar con mi reserva' : 'Continuar al pago'} disabled={saving} onPress={() => void reserve()} accessibilityHint="Continuá para preparar el checkout de Mercado Pago" />
-            <Text style={styles.note}>El pago se realiza en Mercado Pago.</Text>
           </View>
         </View>
       </ScrollView>
@@ -109,6 +108,5 @@ const styles = StyleSheet.create({
   total: { fontSize: 32, lineHeight: 40, fontWeight: '700', color: colors.ink },
   currency: { fontSize: 15, fontWeight: '500' },
   actions: { alignItems: 'center', gap: 12, paddingTop: 4 },
-  note: { textAlign: 'center', fontSize: 13, lineHeight: 20, color: colors.label },
   pending: { color: colors.label, fontSize: 14, lineHeight: 22 },
 });
