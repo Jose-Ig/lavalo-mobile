@@ -147,7 +147,6 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
   const canPay = stage === 'ready' || (stage === 'known' && !confirmed && status?.reservation_status === 'pending' && !!status.checkout_url);
   const reservation = session?.booking.data;
   const canCancel = !confirmed && !!reservation && reservation.status === 'pending' && status?.reservation_status !== 'confirmed' && status?.reservation_status !== 'completed' && (stage === 'ready' || (stage === 'known' && status && (!['completed', 'review'].includes(status.status) || status.issue === 'legacy_preferences')));
-  const canCreate = stage === 'empty' || (stage === 'known' && (confirmed || reservation?.status === 'cancelled' || status?.status === 'expired' || status?.status === 'refunded' || (!status && !!reservation?.expires_at && Date.parse(reservation.expires_at) <= Date.now())));
   const heading = confirmed ? '¡Reserva confirmada!' : canPay ? null : stage === 'loading' ? 'Consultando tu reserva' : stage === 'empty' ? 'Tus reservas' : 'Estado de tu pago';
   return <View style={styles.root}>
     <View style={[styles.header, { paddingTop: insets.top + 12 }]}><Text style={styles.headerTitle}>Pago</Text></View>
@@ -182,7 +181,6 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
         </View>}
         <View style={styles.actions}>
           {canCancel && <ActionButton surface="light" variant="danger" label="Cancelar reserva" disabled={busy} onPress={confirmCancellation} />}
-          {canCreate && <ActionButton surface="light" label="Hacer otra reserva" disabled={busy} onPress={() => { void clearCheckoutSession(reservation?.id).then(() => navigation.navigate('ChooseDate')).catch(() => setMessage('No pudimos guardar el cambio. Reintentá.')); }} />}
           <ActionButton surface="light" variant="secondary" label="Volver al inicio" disabled={busy} onPress={() => navigation.navigate('Home')} />
         </View>
 
