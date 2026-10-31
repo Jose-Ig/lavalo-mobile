@@ -22,7 +22,7 @@ const messages: Record<string, string> = {
   review: 'Este pago requiere revisión. Contactanos indicando el número de reserva.',
 };
 function paymentMessage(status: CheckoutStatus): string {
-  if (status.status === 'completed' && status.verified && status.reservation_status === 'confirmed') return status.simulated ? 'Pago de prueba exitoso. Tu turno está confirmado; no se realizó ningún cobro.' : 'Tu pago fue aprobado y tu turno está confirmado.';
+  if (status.status === 'completed' && status.verified && status.reservation_status === 'confirmed') return 'Tu pago fue aprobado y tu turno está confirmado.';
   if (status.issue === 'legacy_preferences') return 'Esta reserva usa un checkout anterior. Si no pagaste, podés cancelarla y elegir otro turno. Si pagaste, contactanos antes de volver a pagar.';
   if (status.issue === 'order_canceled') return 'La orden de pago de esta reserva fue cancelada. Cancelá la reserva antes de elegir otro turno.';
   if (status.reservation_status === 'cancelled' && !['review', 'refunded'].includes(status.status)) return 'Esta reserva está cancelada.';
@@ -113,7 +113,6 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
       if (!valid()) return;
       if (result.reservation_id !== booking.data.id) throw new Error('Reservation mismatch');
       setStatus(result); setStage('known');
-      if (result.simulated && result.status === 'completed') { setMessage(''); return; }
       if (!result.checkout_url) { setMessage('Este turno ya no admite iniciar un pago. Esperá la actualización del estado.'); return; }
       setMessage(''); await WebBrowser.openBrowserAsync(result.checkout_url);
     } catch (error) { if (valid()) setActionError(apiErrorMessage(error)); }

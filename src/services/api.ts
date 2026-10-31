@@ -59,7 +59,6 @@ export default api;
 
 export interface CheckoutStatus {
   reservation_number: string;
-  simulated?: boolean;
   confirmation_code?: string;
   notification_status?: string;
   id: number;
