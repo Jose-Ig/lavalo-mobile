@@ -91,15 +91,6 @@ export default function SubscriptionPaymentScreen({ navigation, route }: Props) 
                 <View style={styles.divider} />
               </>
             ) : null}
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Patente</Text>
-              <Text style={styles.detailValue}>{reservation.patente}</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Vehículo</Text>
-              <Text style={styles.detailValue}>{reservation.modelo}</Text>
-            </View>
             <View style={styles.divider} />
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Total mensual</Text>

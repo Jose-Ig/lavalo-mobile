@@ -31,8 +31,7 @@ export async function getAvailableSlots(date: string, time: string, duration: nu
 export async function createReservation(r: ReservationData): Promise<BookingResponse> {
   const response = await api.post<BookingResponse>('/reservations', {
     slot_id: r.espacio, start_time: bookingStart(r.date, r.time),
-    duration_minutes: r.duration, name: r.nombre, whatsapp_opt_in: r.whatsappOptIn === true, email: r.email?.trim() || undefined, phone: r.telefono,
-    vehicle_plate: r.patente, vehicle_model: r.modelo,
+    duration_minutes: r.duration, name: r.nombre, whatsapp_opt_in: r.whatsappOptIn === true, phone: r.telefono,
   });
   return response.data;
 }

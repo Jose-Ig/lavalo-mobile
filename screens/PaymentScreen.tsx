@@ -55,12 +55,8 @@ export default function PaymentScreen({ navigation, route }: Props) {
           <View style={styles.card}>
             <View style={styles.cardHeader}><Text style={styles.cardTitle} accessibilityRole="header">Contacto</Text><Pressable accessibilityRole="button" accessibilityLabel="Editar contacto" disabled={saving || !!pending} onPress={() => setEditing('contact')} style={styles.edit}><Text style={[styles.editLabel, (saving || !!pending) && styles.editDisabled]}>Editar</Text></Pressable></View>
             <Detail label="Nombre" value={reservation.nombre} />
-            <Detail label="WhatsApp" value={reservation.telefono} />
-            {!!reservation.email && <Detail label="Email" value={reservation.email} />}
-            <View style={styles.divider} />
-            <Text style={styles.cardTitle} accessibilityRole="header">Vehículo</Text>
-            <Detail label="Modelo" value={reservation.modelo} />
-            <Detail label="Patente" value={reservation.patente} />
+            <Detail label="Celular" value={reservation.telefono} />
+            <Detail label="Envío" value={reservation.whatsappOptIn ? 'SMS y WhatsApp' : 'SMS'} />
           </View>
           <View style={styles.totalCard}>
             <Text style={styles.totalLabel}>Total estimado</Text>
@@ -102,7 +98,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', columnGap: 12, rowGap: 4 },
   rowLabel: { width: 80, color: colors.label, fontSize: 14, lineHeight: 22 },
   rowValue: { flexGrow: 1, flexShrink: 1, flexBasis: 140, color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '500' },
-  divider: { height: 1, backgroundColor: '#E1E7F1', marginVertical: 4 },
   totalCard: { padding: 20, gap: 8, backgroundColor: '#EEF4FF', borderRadius: 24 },
   totalLabel: { fontSize: 15, lineHeight: 22, color: colors.label, fontWeight: '600' },
   total: { fontSize: 32, lineHeight: 40, fontWeight: '700', color: colors.ink },
