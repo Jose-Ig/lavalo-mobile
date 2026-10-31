@@ -22,3 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 Home, location and information icons are local SVG drawings using a shared 24-unit grid.
+
+## Mercado Pago
+
+Logo vertical a color, uso digital RGB, del paquete oficial "Logos Mercado Pago 2025"
+publicado en https://www.mercadopago.com.ar/mp/logo-oficial (consultado el 31/10/2026).
+Archivo original: MP_RGB_HANDSHAKE_color_vertical.png. Se conserva sin modificar ni deformar.
+Descarga: https://http2.mlstatic.com/storage/pog-cm-admin/calm-assets/Logos%20Mercado%20Pago%202025--fb6f16c9.zip
+Marca propiedad de Mercado Pago; uso para identificar la opción de pago.

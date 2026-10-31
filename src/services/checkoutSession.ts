@@ -26,7 +26,11 @@ export async function loadCheckoutSession(id?: number): Promise<CheckoutSession 
     return value;
   } catch { return null; }
 }
-export async function clearCheckoutSession(): Promise<void> { await SecureStore.deleteItemAsync(KEY); }
+export async function clearCheckoutSession(id?: number): Promise<void> {
+  const current = await loadCheckoutSession();
+  if (id !== undefined && current?.booking.data.id !== id) return;
+  await SecureStore.deleteItemAsync(KEY);
+}
 
 export async function checkoutHistory(): Promise<number[]> {
   const raw = await SecureStore.getItemAsync(HISTORY);

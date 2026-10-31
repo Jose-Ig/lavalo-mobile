@@ -61,7 +61,7 @@ export default function HomeScreen({ navigation, route }: Props) {
         onLayout={event => setActionsHeight(event.nativeEvent.layout.height)}
         style={[styles.actions, { top: actionsTop, opacity: reveal, transform: [{ translateY: intro.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
         <ActionButton label="Quiero una reserva" disabled={!ready} accessibilityHint="Elegí un día y horario para tu lavado" onPress={() => navigation.navigate('ChooseDate')} />
-        <ActionButton label="Tengo una reserva" variant="secondary" disabled={!ready} accessibilityHint="Consultá el estado de tu reserva y tu pago" onPress={() => navigation.navigate('CheckoutStatus')} />
+        <ActionButton label="Tengo una reserva" variant="secondary" disabled={!ready} accessibilityHint="Consultá el estado de tu reserva y tu pago" onPress={() => navigation.navigate('CheckoutStatus', { reservationId: undefined })} />
       </Animated.View>
 
       </ScrollView>

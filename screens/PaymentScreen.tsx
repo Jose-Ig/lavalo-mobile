@@ -6,7 +6,7 @@ import type { RootStackParamList } from '../App';
 import ActionButton from '../src/components/ActionButton';
 import ReservationEditor from '../src/components/ReservationEditor';
 import { createReservation, apiErrorMessage, type BookingResponse } from '../src/services/api';
-import { loadCheckoutSession, saveCheckoutSession } from '../src/services/checkoutSession';
+import { saveCheckoutSession } from '../src/services/checkoutSession';
 import { homeTheme as colors } from '../src/theme/home';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Payment'>;
@@ -28,12 +28,10 @@ export default function PaymentScreen({ navigation, route }: Props) {
     if (savingRef.current) return;
     savingRef.current = true; setSaving(true);
     try {
-      const saved = await loadCheckoutSession();
-      if (saved) { navigation.navigate('CheckoutStatus'); return; }
       const result = pending || await createReservation(reservation);
       setPending(result);
       await saveCheckoutSession(result);
-      navigation.navigate('CheckoutStatus');
+      navigation.navigate('CheckoutStatus', { reservationId: result.data.id });
     } catch (error) { Alert.alert('No pudimos reservar', apiErrorMessage(error)); }
     finally { savingRef.current = false; setSaving(false); }
   };

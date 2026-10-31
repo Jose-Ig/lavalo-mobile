@@ -86,7 +86,7 @@ export type RootStackParamList = {
     | { flowType?: 'reservation'; booking: BookingData; subscriptionBooking?: undefined }
     | { flowType: 'subscription'; subscriptionBooking: SubscriptionBooking; booking?: undefined };
   Payment: { reservation: ReservationData };
-  CheckoutStatus: undefined;
+  CheckoutStatus: { reservationId?: number } | undefined;
   Success: { reservation: ReservationData; date: string; time: string };
   Error: undefined;
   HaveTurn: undefined;
@@ -159,7 +159,7 @@ export default function App() {
           component={PaymentScreen}
           options={{ headerShown: false, animation: 'slide_from_bottom' }}
         />
-        <Stack.Screen name="CheckoutStatus" component={CheckoutStatusScreen} options={{ title: 'Mi pago', headerBackVisible: false }} />
+        <Stack.Screen name="CheckoutStatus" component={CheckoutStatusScreen} options={{ headerShown: false }} />
         <Stack.Screen
           name="Success"
           component={SuccessScreen}

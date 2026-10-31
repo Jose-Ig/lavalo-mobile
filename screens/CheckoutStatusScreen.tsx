@@ -1,67 +1,100 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Linking, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { isAxiosError } from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as WebBrowser from 'expo-web-browser';
 import type { RootStackParamList } from '../App';
-import { apiErrorMessage, cancelReservation, getCheckoutStatus, startCheckout, type CheckoutStatus } from '../src/services/api';
+import ActionButton from '../src/components/ActionButton';
+import { apiErrorMessage, cancelReservation, getCheckoutStatus, getReservation, startCheckout, type CheckoutStatus } from '../src/services/api';
 import { checkoutHistory, clearCheckoutSession, loadCheckoutSession, type CheckoutSession } from '../src/services/checkoutSession';
+import { homeTheme as colors } from '../src/theme/home';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CheckoutStatus'>;
+type Stage = 'loading' | 'ready' | 'known' | 'error' | 'empty';
 const messages: Record<string, string> = {
   creating: 'Estamos preparando tu pago. Consultá el estado antes de volver a intentar.',
-  pending: 'Tu pago está pendiente. El turno se confirma cuando recibimos la aprobación.',
-  failed: 'El pago fue rechazado o cancelado. Podés volver al checkout mientras el turno siga vigente.',
-  expired: 'La retención del turno venció. Si pagaste, consultá nuevamente o contactanos antes de reservar otro turno.',
-  refunded: 'El pago fue devuelto o tuvo un contracargo. Consultanos para conocer el detalle.',
-  review: 'Recibimos un pago que requiere revisión. Contactanos indicando el número de reserva.',
+  pending: 'Podés continuar en Mercado Pago. El turno se confirma al verificar la aprobación.',
+  failed: 'El pago no se completó. Si el turno sigue vigente, podés volver al checkout.',
+  expired: 'La retención del turno venció. Si pagaste, consultá nuevamente antes de reservar otro turno.',
+  refunded: 'El pago fue devuelto o tuvo un contracargo. Contactanos para conocer el detalle.',
+  review: 'Este pago requiere revisión. Contactanos indicando el número de reserva.',
 };
-function paymentMessage(status: CheckoutStatus, confirmed: boolean): string {
-  if (confirmed) return 'Tu pago fue aprobado y tu turno está confirmado.';
-  if (status.issue === 'legacy_preferences') return 'Esta reserva usa un checkout anterior. Si todavía no pagaste, cancelala y creá otra. Si ya pagaste, contactanos antes de volver a pagar.';
-  if (status.issue === 'order_canceled') return 'La orden de pago fue cancelada. Cancelá esta reserva antes de elegir otro turno.';
-  if (status.reservation_status === 'cancelled' && !['review', 'refunded'].includes(status.status)) return 'Esta reserva fue cancelada. Si pagaste, contactanos indicando su número.';
+function paymentMessage(status: CheckoutStatus): string {
+  if (status.status === 'completed' && status.verified && status.reservation_status === 'confirmed') return 'Tu pago fue aprobado y tu turno está confirmado.';
+  if (status.issue === 'legacy_preferences') return 'Esta reserva usa un checkout anterior. Si no pagaste, podés cancelarla y elegir otro turno. Si pagaste, contactanos antes de volver a pagar.';
+  if (status.issue === 'order_canceled') return 'La orden de pago de esta reserva fue cancelada. Cancelá la reserva antes de elegir otro turno.';
+  if (status.reservation_status === 'cancelled' && !['review', 'refunded'].includes(status.status)) return 'Esta reserva está cancelada.';
   return messages[status.status] || 'Consultá el estado para conocer el resultado.';
 }
-export default function CheckoutStatusScreen({ navigation }: Props) {
+export default function CheckoutStatusScreen({ navigation, route }: Props) {
+  const insets = useSafeAreaInsets();
   const [session, setSession] = useState<CheckoutSession | null>(null);
   const [status, setStatus] = useState<CheckoutStatus | null>(null);
-  const [message, setMessage] = useState('Consultando tu pago…');
+  const [stage, setStage] = useState<Stage>('loading');
+  const [message, setMessage] = useState('');
+  const [actionError, setActionError] = useState('');
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<number[]>([]);
-  const selectedID = useRef<number | undefined>(undefined);
-  const active = useRef(true);
+  const [showHistory, setShowHistory] = useState(false);
+  const selectedID = useRef<number | undefined>(route.params?.reservationId);
+  const active = useRef(false);
+  const generation = useRef(0);
   const lock = useRef(false);
   const currentSession = useRef<CheckoutSession | null>(null);
   const mounted = useRef(true);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; generation.current++; }; }, []);
 
   const refresh = useCallback(async () => {
     if (lock.current) return;
+    const epoch = generation.current;
+    const valid = () => mounted.current && epoch === generation.current;
     lock.current = true; setBusy(true);
     try {
       const ids = await checkoutHistory();
-      const saved = await loadCheckoutSession(selectedID.current) || (ids.length ? await loadCheckoutSession(ids[ids.length - 1]) : null);
-      if (mounted.current) setHistory(ids);
-      currentSession.current = saved;
-      if (!mounted.current) return;
-      setSession(saved);
-      if (!saved) { setStatus(null); setMessage('No hay una reserva guardada en este dispositivo.'); return; }
-      const result = await getCheckoutStatus(saved.booking.data.id, saved.booking.access_token);
-      if (!mounted.current) return;
-      setStatus(result); setMessage('');
+      // An explicit reservation never falls back to a different saved payment or historical entry.
+      const saved = await loadCheckoutSession(selectedID.current);
+      if (!valid()) return;
+      setHistory(ids); currentSession.current = saved; setSession(saved);
+      if (!saved) { setStatus(null); setStage('empty'); setMessage('No hay una reserva activa guardada. Podés elegir una del historial o crear una nueva.'); return; }
+      const reservation = await getReservation(saved.booking.data.id, saved.booking.access_token);
+      if (!valid()) return;
+      const updated = { booking: { ...saved.booking, data: reservation } };
+      currentSession.current = updated; setSession(updated);
+      let result: CheckoutStatus;
+      try { result = await getCheckoutStatus(reservation.id, saved.booking.access_token); }
+      catch (error) {
+        if (!valid()) return;
+        if (isAxiosError(error) && error.response?.status === 404) {
+          // Reservation was verified above; no checkout yet is a normal pre-payment state.
+          setStatus(null);
+          if (reservation.status === 'pending' && reservation.expires_at && Date.parse(reservation.expires_at) > Date.now()) {
+            setStage('ready'); setMessage('Elegí una opción para abrir el checkout y completar el pago.');
+          } else {
+            setStage('known'); setMessage(reservation.status === 'cancelled' ? 'Esta reserva está cancelada.' : 'La retención de este turno ya venció.');
+          }
+          return;
+        }
+        throw error;
+      }
+      if (!valid()) return;
+      if (result.reservation_id !== reservation.id) throw new Error('Reservation mismatch');
+      setStatus(result); setStage('known'); setMessage('');
     } catch (error) {
-      if (mounted.current) { setStatus(null); setMessage(apiErrorMessage(error)); }
-    } finally { lock.current = false; if (mounted.current) setBusy(false); }
+      if (valid()) { setStatus(null); setStage('error'); setMessage(apiErrorMessage(error)); }
+    } finally { if (valid()) { lock.current = false; setBusy(false); } }
   }, []);
-
+  const selectReservation = useCallback((id?: number) => {
+    generation.current++; lock.current = false; selectedID.current = id; currentSession.current = null;
+    setSession(null); setStatus(null); setStage('loading'); setMessage(''); setActionError(''); setShowHistory(false); void refresh();
+  }, [refresh]);
   useFocusEffect(useCallback(() => {
-    active.current = true; selectedID.current = undefined; void refresh();
-    // Bounded foreground polling; webhooks and server reconciliation continue when the app is closed.
+    active.current = true; selectReservation(route.params?.reservationId);
     let polls = 0;
     const timer = setInterval(() => { if (++polls <= 12 && AppState.currentState === 'active') void refresh(); }, 5000);
-    return () => { active.current = false; clearInterval(timer); };
-  }, [refresh]));
+    return () => { active.current = false; generation.current++; clearInterval(timer); };
+  }, [route.params?.reservationId, refresh, selectReservation]));
   useEffect(() => {
     const app = AppState.addEventListener('change', value => { if (value === 'active' && active.current) void refresh(); });
     const link = Linking.addEventListener('url', ({ url }) => {
@@ -72,59 +105,104 @@ export default function CheckoutStatusScreen({ navigation }: Props) {
     });
     return () => { app.remove(); link.remove(); };
   }, [refresh]);
-
   const pay = async () => {
     if (lock.current || !currentSession.current) return;
-    lock.current = true; setBusy(true);
+    const epoch = generation.current;
+    const valid = () => mounted.current && epoch === generation.current;
+    lock.current = true; setBusy(true); setActionError(''); setMessage('Preparando tu pago…');
     try {
       const { booking } = currentSession.current;
       const result = await startCheckout(booking.data.id, booking.access_token);
-      setStatus(result);
+      if (!valid()) return;
+      if (result.reservation_id !== booking.data.id) throw new Error('Reservation mismatch');
+      setStatus(result); setStage('known');
       if (!result.checkout_url) { setMessage('Este turno ya no admite iniciar un pago. Consultá su estado.'); return; }
-      await WebBrowser.openBrowserAsync(result.checkout_url);
-    } catch (error) { setMessage(apiErrorMessage(error)); }
-    finally { lock.current = false; if (mounted.current) { setBusy(false); void refresh(); } }
+      setMessage(''); await WebBrowser.openBrowserAsync(result.checkout_url);
+    } catch (error) { if (valid()) setActionError(apiErrorMessage(error)); }
+    finally { if (valid()) { lock.current = false; setBusy(false); void refresh(); } }
   };
   const release = async () => {
     if (lock.current || !currentSession.current) return;
+    const { booking } = currentSession.current;
     lock.current = true; setBusy(true);
     try {
-      const { booking } = currentSession.current;
       await cancelReservation(booking.data.id, booking.access_token);
-      await clearCheckoutSession();
-      navigation.replace('Home');
+      await clearCheckoutSession(booking.data.id); navigation.replace('Home');
     } catch (error) { setMessage(apiErrorMessage(error)); }
     finally { lock.current = false; if (mounted.current) setBusy(false); }
   };
-  const confirmed = status?.verified === true && status.status === 'completed' && status.reservation_status === 'confirmed';
-  const canPay = !confirmed && status?.reservation_status === 'pending' && !!status?.checkout_url;
-  return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <Text style={styles.title}>{confirmed ? '¡Reserva confirmada!' : 'Estado de tu pago'}</Text>
-      {session && <Text style={styles.text}>Reserva #{session.booking.data.id}</Text>}
-      {status && <>
-        <Text style={styles.text}>{paymentMessage(status, confirmed)}</Text>
-        <Text style={styles.text}>Total: ${(status.amount_cents / 100).toLocaleString('es-AR')} {status.currency}</Text>
-        {session && <Text style={styles.text}>Turno: {new Date(session.booking.data.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba' })}</Text>}
-      </>}
-      {!!message && <Text accessibilityLiveRegion="polite" style={styles.text}>{message}</Text>}
-      <TouchableOpacity style={styles.button} disabled={busy} onPress={() => void refresh()}><Text style={styles.label}>{busy ? 'Consultando…' : 'Actualizar estado'}</Text></TouchableOpacity>
-      {canPay && <TouchableOpacity style={styles.button} disabled={busy} onPress={() => void pay()}><Text style={styles.label}>Continuar en Mercado Pago</Text></TouchableOpacity>}
-      {session && !status && <TouchableOpacity style={styles.button} disabled={busy} onPress={() => void pay()}><Text style={styles.label}>Preparar checkout</Text></TouchableOpacity>}
-      {session && (!status || (status.reservation_status === 'pending' && (!['completed', 'review'].includes(status.status) || status.issue === 'legacy_preferences'))) &&
-        <TouchableOpacity style={styles.secondary} disabled={busy} onPress={() => Alert.alert('Cancelar reserva', 'El turno se libera. Si ya pagaste, consultá el estado antes de cancelar.', [{ text: 'Volver', style: 'cancel' }, { text: 'Cancelar reserva', style: 'destructive', onPress: () => void release() }])}><Text>Cancelar reserva</Text></TouchableOpacity>}
-      {session && status && (confirmed || ['refunded', 'expired'].includes(status.status) || status.reservation_status === 'cancelled') &&
-        <TouchableOpacity style={styles.secondary} disabled={busy} onPress={() => { void clearCheckoutSession().then(() => navigation.navigate('ChooseDate')).catch(() => setMessage('No pudimos guardar el cambio. Reintentá.')); }}><Text>Hacer otra reserva (conservar comprobante)</Text></TouchableOpacity>}
-      {history.length > 1 && <View style={{ gap: 12 }}><Text>Mis reservas guardadas</Text>{history.map(id => <TouchableOpacity key={id} disabled={busy} onPress={() => { selectedID.current = id; void refresh(); }}><Text>Consultar reserva #{id}</Text></TouchableOpacity>)}</View>}
-      <TouchableOpacity style={styles.secondary} onPress={() => navigation.navigate('Home')}><Text>Volver al inicio</Text></TouchableOpacity>
-    </ScrollView>
-  );
+  const confirmed = !!status && status.verified && status.status === 'completed' && status.reservation_status === 'confirmed';
+  const canPay = stage === 'ready' || (stage === 'known' && !confirmed && status?.reservation_status === 'pending' && !!status.checkout_url);
+  const reservation = session?.booking.data;
+  const canCancel = !!reservation && reservation.status === 'pending' && (stage === 'ready' || (stage === 'known' && status && (!['completed', 'review'].includes(status.status) || status.issue === 'legacy_preferences')));
+  const canCreate = stage === 'empty' || (stage === 'known' && (confirmed || reservation?.status === 'cancelled' || status?.status === 'expired' || status?.status === 'refunded' || (!status && !!reservation?.expires_at && Date.parse(reservation.expires_at) <= Date.now())));
+  const heading = confirmed ? '¡Reserva confirmada!' : canPay ? 'Elegí cómo pagar' : stage === 'loading' ? 'Consultando tu reserva' : stage === 'empty' ? 'Tus reservas' : 'Estado de tu pago';
+  return <View style={styles.root}>
+    <View style={[styles.header, { paddingTop: insets.top + 12 }]}><Text style={styles.headerTitle}>Pago</Text></View>
+    <View style={styles.sheet}><ScrollView contentContainerStyle={styles.scroll}>
+      <View style={styles.content}>
+        <Text style={styles.title} accessibilityRole="header">{heading}</Text>
+        {!!reservation && <View style={styles.reservationCard}>
+          <Text style={styles.cardTitle}>Reserva #{reservation.id}</Text>
+          <Text style={styles.text}>{new Date(reservation.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</Text>
+          <Text style={styles.text}>{reservation.duration_minutes} minutos</Text>
+          {!!status && <Text style={styles.total}>{(status.amount_cents / 100).toLocaleString('es-AR', { style: 'currency', currency: status.currency })}</Text>}
+        </View>}
+        {!!status && <View style={[styles.statusCard, confirmed && styles.confirmed]}><Text style={styles.text}>{paymentMessage(status)}</Text></View>}
+        {!!message && <Text accessibilityLiveRegion="polite" style={styles.text}>{message}</Text>}
+        {!!actionError && <Text accessibilityRole="alert" style={styles.error}>{actionError}</Text>}
+        {stage === 'loading' && <ActivityIndicator size="large" color={colors.blue} />}
+        {canPay && <View style={styles.methodsSection}>
+          <Text style={styles.cardTitle}>Medio de pago</Text>
+          <View style={styles.methodsGrid}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Pagar con Mercado Pago" accessibilityHint="Abrí el checkout de Mercado Pago para esta reserva" accessibilityState={{ disabled: busy }} disabled={busy}
+              onPress={() => void pay()} android_ripple={{ color: '#D9E6FF' }} style={({ pressed }) => [styles.method, (pressed || busy) && styles.dimmed]}>
+              <Image accessible={false} source={require('../assets/payments/mercadopago.png')} style={styles.logo} resizeMode="contain" />
+              {busy ? <ActivityIndicator color={colors.blue} /> : <Text style={styles.methodLabel}>Pagar</Text>}
+            </Pressable>
+          </View>
+          <Text style={styles.hint}>Vas a completar el pago en Mercado Pago.</Text>
+        </View>}
+        <View style={styles.actions}>
+          {stage !== 'empty' && <ActionButton surface="light" variant="secondary" label={busy ? 'Consultando…' : 'Actualizar estado'} disabled={busy} onPress={() => void refresh()} />}
+          {canCancel && <Pressable accessibilityRole="button" disabled={busy} style={styles.textButton} onPress={() => Alert.alert('Cancelar reserva', 'El turno se libera. Si ya pagaste, consultá el estado antes de cancelar.', [{ text: 'Volver', style: 'cancel' }, { text: 'Cancelar reserva', style: 'destructive', onPress: () => void release() }])}><Text style={styles.cancelLabel}>Cancelar reserva</Text></Pressable>}
+          {canCreate && <ActionButton surface="light" label="Hacer otra reserva" disabled={busy} onPress={() => { void clearCheckoutSession(reservation?.id).then(() => navigation.navigate('ChooseDate')).catch(() => setMessage('No pudimos guardar el cambio. Reintentá.')); }} />}
+          <Pressable accessibilityRole="button" style={styles.textButton} onPress={() => navigation.navigate('Home')}><Text style={styles.link}>Volver al inicio</Text></Pressable>
+        </View>
+        {history.some(id => id !== reservation?.id) && <View style={styles.history}>
+          <Pressable accessibilityRole="button" accessibilityState={{ expanded: showHistory }} style={styles.textButton} onPress={() => setShowHistory(value => !value)}><Text style={styles.link}>{showHistory ? 'Ocultar historial' : 'Ver reservas anteriores'}</Text></Pressable>
+          {showHistory && history.filter(id => id !== reservation?.id).map(id => <Pressable key={id} disabled={busy} accessibilityRole="button" style={styles.historyRow} onPress={() => selectReservation(id)}><Text style={styles.text}>Consultar reserva #{id}</Text></Pressable>)}
+        </View>}
+      </View>
+    </ScrollView></View>
+  </View>;
 }
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, padding: 24, gap: 18, backgroundColor: '#fff' },
-  title: { fontSize: 28, fontWeight: '700', color: '#222' },
-  text: { fontSize: 17, lineHeight: 26, color: '#333' },
-  button: { backgroundColor: '#000', padding: 16, borderRadius: 12, alignItems: 'center' },
-  label: { color: '#fff', fontWeight: '600', fontSize: 17 },
-  secondary: { padding: 16, alignItems: 'center' },
+  root: { flex: 1, backgroundColor: colors.blue },
+  header: { paddingHorizontal: 24, paddingBottom: 20 },
+  headerTitle: { color: '#FFFFFF', fontSize: 26, lineHeight: 34, fontWeight: '700' },
+  sheet: { flex: 1, backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden' },
+  scroll: { padding: 24, paddingBottom: 32, alignItems: 'center' },
+  content: { width: '100%', maxWidth: 480, gap: 24 },
+  title: { color: colors.ink, fontSize: 26, lineHeight: 34, fontWeight: '700' },
+  reservationCard: { padding: 20, borderRadius: 24, backgroundColor: '#EFF4FC', gap: 8 },
+  cardTitle: { color: colors.ink, fontSize: 18, lineHeight: 26, fontWeight: '700' },
+  text: { color: colors.label, fontSize: 16, lineHeight: 24 },
+  total: { color: colors.ink, fontSize: 28, lineHeight: 36, fontWeight: '700', marginTop: 4 },
+  statusCard: { padding: 20, borderRadius: 20, backgroundColor: '#F1F4F8' },
+  confirmed: { backgroundColor: '#E5F5EB' },
+  methodsSection: { gap: 16 },
+  methodsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  method: { width: '47%', minWidth: 140, maxWidth: 176, aspectRatio: 1, padding: 12, alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#B7CAE7', borderRadius: 16, overflow: 'hidden' },
+  logo: { width: '100%', height: '68%' },
+  methodLabel: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '600' },
+  error: { color: '#AD2936', fontSize: 15, lineHeight: 22 },
+  dimmed: { opacity: 0.6 },
+  hint: { color: colors.label, fontSize: 13, lineHeight: 20 },
+  actions: { alignItems: 'center', gap: 12 },
+  textButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 12 },
+  link: { color: colors.blue, fontSize: 15, lineHeight: 22, fontWeight: '600', textAlign: 'center' },
+  cancelLabel: { color: '#AD2936', fontSize: 15, lineHeight: 22, fontWeight: '600' },
+  history: { borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#DCE6F7', paddingTop: 12 },
+  historyRow: { minHeight: 56, justifyContent: 'center', padding: 16, borderRadius: 16, backgroundColor: '#F0F4FC', marginBottom: 8 },
 });
