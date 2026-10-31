@@ -24,6 +24,7 @@ import SubscriptionSuccessScreen from './screens/SubscriptionSuccessScreen';
 import BottomBar from './src/components/BottomBar';
 
 export interface BookingData {
+  espacioLabel?: string;
   date: string;
   time: string;
   duration: number;

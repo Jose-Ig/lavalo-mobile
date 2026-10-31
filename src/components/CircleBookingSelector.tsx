@@ -94,7 +94,7 @@ function WheelPicker<T>({ data, selectedIndex, onSelect }: WheelPickerProps<T>) 
 
   useEffect(() => {
     scrollViewRef.current?.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: false });
-  }, []);
+  }, [selectedIndex, data]);
 
   const snapToIndex = useCallback(
     (offsetY: number) => {

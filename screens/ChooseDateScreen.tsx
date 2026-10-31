@@ -12,22 +12,27 @@ import { homeTheme as colors } from '../src/theme/home';
 type Props = NativeStackScreenProps<RootStackParamList, 'ChooseDate'>;
 export default function ChooseDateScreen({ navigation }: Props) {
   const [selection, setSelection] = useState<BookingSelection | null>(null);
-  const [slots, setSlots] = useState<Slot[]>([]);
+  const [availability, setAvailability] = useState<{ key: string; slots: Slot[]; status: 'loading' | 'ready' | 'error'; error: string }>({ key: '', slots: [], status: 'ready', error: '' });
   const [slotId, setSlotId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const selectionKey = selection ? `${selection.date}/${selection.time}/${selection.duration}` : '';
   useEffect(() => {
     let active = true;
-    setSlots([]); setSlotId(null); setError('');
-    if (!selection) { setLoading(false); return; }
-    setLoading(true);
+    if (!selection) { setAvailability({ key: '', slots: [], status: 'ready', error: '' }); setSlotId(null); return; }
+    setAvailability({ key: selectionKey, slots: [], status: 'loading', error: '' });
     getAvailableSlots(selection.date, selection.time, selection.duration)
-      .then(items => { if (active) { setSlots(items); setSlotId(items[0]?.id ?? null); } })
-      .catch(e => { if (active) setError(apiErrorMessage(e)); })
-      .finally(() => { if (active) setLoading(false); });
+      .then(items => {
+        if (!active) return;
+        setSlotId(previous => items.some(item => item.id === previous) ? previous : items[0]?.id ?? null);
+        setAvailability({ key: selectionKey, slots: items, status: 'ready', error: '' });
+      })
+      .catch(error => { if (active) { setSlotId(null); setAvailability({ key: selectionKey, slots: [], status: 'error', error: apiErrorMessage(error) }); } });
     return () => { active = false; };
-  }, [selection?.date, selection?.time, selection?.duration]);
-  const ready = !!selection && slotId !== null && !loading && !error;
+  }, [selectionKey]);
+  const slots = availability.key === selectionKey ? availability.slots : [];
+  const loading = !!selection && (availability.key !== selectionKey || availability.status === 'loading');
+  const error = availability.key === selectionKey ? availability.error : '';
+  const selectedSlot = slots.find(slot => slot.id === slotId);
+  const ready = Boolean(selection && selectedSlot && !loading && !error);
   const insets = useSafeAreaInsets();
   return <View style={styles.root}>
     <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
@@ -61,8 +66,8 @@ export default function ChooseDateScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.actions}>
-            <ActionButton label="Continuar" surface="light" disabled={!ready} accessibilityHint="Completá los datos de tu reserva"
-              onPress={() => { if (selection && ready && slotId !== null) navigation.navigate('ReservationForm', { booking: { ...selection, espacio: slotId } }); }} />
+            <ActionButton label={loading ? 'Consultando disponibilidad…' : 'Continuar'} surface="light" disabled={!ready} accessibilityHint="Completá los datos de tu reserva"
+              onPress={() => { if (selection && ready && slotId !== null) navigation.navigate('ReservationForm', { booking: { ...selection, espacio: slotId, espacioLabel: selectedSlot?.label } }); }} />
           </View>
         </View>
       </ScrollView>
