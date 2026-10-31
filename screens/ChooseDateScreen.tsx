@@ -57,9 +57,6 @@ export default function ChooseDateScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.spaceCard}>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle} accessibilityRole="header">Disponibilidad del turno</Text>
-            </View>
             {loading ? <View style={styles.status} accessibilityLiveRegion="polite">
               <ActivityIndicator color={colors.blue} />
               <Text style={styles.statusText}>Consultando espacios…</Text>

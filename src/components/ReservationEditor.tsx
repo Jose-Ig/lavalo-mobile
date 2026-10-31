@@ -72,7 +72,7 @@ export default function ReservationEditor({ section, value, onSave, onClose }: P
             </Pressable>
           </> : <>
             <CircleBookingSelector initialSelection={value} defaultDuration={value.duration} onChange={setSelection} />
-            <View style={styles.spaceCard}><Text style={styles.label}>Disponibilidad del turno</Text>
+            <View style={styles.spaceCard}>
               {!selection ? <Text style={styles.hint}>Elegí un turno con horarios disponibles.</Text> : loading ? <ActivityIndicator color={colors.blue} /> : availability.error ?
                 <Text accessibilityRole="alert" style={styles.error}>{availability.error}</Text> : !slots.length ? <Text accessibilityLiveRegion="polite" style={styles.error}>No hay disponibilidad para este turno.</Text> : <Text style={styles.hint}>Hay disponibilidad para este turno.</Text>}
 
