@@ -57,7 +57,7 @@ export default function ChangeTurnScreen({ navigation }: Props) {
   return <View style={styles.root}>
     <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
       <Pressable accessibilityRole="button" accessibilityLabel="Volver a la reserva" disabled={saving} onPress={() => navigation.goBack()} style={styles.back}><Text style={styles.arrow}>‹</Text></Pressable>
-      <Text style={styles.headerTitle}>Cambiar turno</Text>
+      <Text style={styles.headerTitle}>Editar reserva</Text>
     </View>
     <View style={styles.sheet}><ScrollView contentContainerStyle={styles.scroll}>
       <View style={styles.content}>

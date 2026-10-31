@@ -68,7 +68,8 @@ export default function HaveTurnScreen({ navigation }: Props) {
             <Text style={styles.text}>{new Date(reservation.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</Text>
             <Text style={styles.text}>{reservation.duration_minutes} minutos · {reservation.slot_label}</Text>
             <Text style={styles.text}>{reservation.can_verify_qr ? 'Ya podés escanear el QR de tu espacio.' : reservation.activation_reason === 'too_early' ? 'Podrás validar el QR al comenzar el horario de tu turno.' : reservation.activation_reason === 'expired' ? 'El horario de este turno ya terminó.' : reservation.status === 'cancelled' ? 'Esta reserva está cancelada y no permite activar un espacio.' : 'Esta reserva no está habilitada para activar un espacio.'}</Text>
-            {reservation.can_reschedule && <ActionButton surface="light" variant="secondary" label="Cambiar turno" onPress={() => navigation.navigate('ChangeTurn')} />}
+            <ActionButton surface="light" variant="secondary" label="Editar reserva" accessibilityHint="Cambiar el día, horario o espacio de tu reserva" disabled={!reservation.can_reschedule} onPress={() => navigation.navigate('ChangeTurn')} />
+            {!reservation.can_reschedule && <Text style={styles.hint}>Podés editar el turno de una reserva confirmada antes de su inicio y sin QR validado.</Text>}
             {reservation.status === 'confirmed' && <ActionButton surface="light" label="Continuar al espacio" onPress={() => navigation.navigate('StartService')} />}
           </View>}
         </View>
