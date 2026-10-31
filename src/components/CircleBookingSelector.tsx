@@ -16,6 +16,7 @@ export interface BookingSelection {
 interface CircleBookingSelectorProps {
   initialSelection?: BookingSelection;
   defaultDuration?: number;
+  fixedDuration?: boolean;
   onChange?: (selection: BookingSelection | null) => void;
 }
 
@@ -217,6 +218,7 @@ const wheelStyles = StyleSheet.create({
 export default function CircleBookingSelector({
   initialSelection,
   defaultDuration = 60,
+  fixedDuration = false,
   onChange,
 }: CircleBookingSelectorProps) {
   const [dayIndex, setDayIndex] = useState(() => Math.max(0, DAYS.findIndex(day => day.value === initialSelection?.date)));
@@ -292,7 +294,7 @@ export default function CircleBookingSelector({
       <View style={styles.headerRow}>
         <Text style={styles.headerLabel}>Día de la semana</Text>
         <Text style={styles.headerLabel}>Hora de inicio</Text>
-        <Text style={styles.headerLabel}>Duración (minutos)</Text>
+        {!fixedDuration && <Text style={styles.headerLabel}>Duración (minutos)</Text>}
       </View>
 
       {/* Ruedas */}
@@ -322,6 +324,7 @@ export default function CircleBookingSelector({
           />
         )}
 
+        {!fixedDuration && <>
         {/* Separador */}
         <View style={styles.separator} />
 
@@ -331,6 +334,7 @@ export default function CircleBookingSelector({
           selectedIndex={durationIndex}
           onSelect={handleDurationSelect}
         />
+        </>}
       </View>
 
       {/* Resumen de selección */}

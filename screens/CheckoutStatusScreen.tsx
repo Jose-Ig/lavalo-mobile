@@ -181,7 +181,6 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
         </View>}
         <View style={styles.actions}>
           {canCancel && <ActionButton surface="light" variant="danger" label="Cancelar reserva" disabled={busy} onPress={confirmCancellation} />}
-          <ActionButton surface="light" variant="secondary" label="Volver al inicio" disabled={busy} onPress={() => navigation.navigate('Home')} />
         </View>
 
       </View>

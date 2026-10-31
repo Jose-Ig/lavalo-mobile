@@ -87,6 +87,7 @@ export async function getCheckoutStatus(id: number, token: string): Promise<Chec
 }
 
 export interface ReservationAccess {
+ can_reschedule: boolean;
  reservation_number: string; reservation_date: string;
  id: number; code: string; slot_id: number; slot_label: string;
  start_time: string; end_time: string; duration_minutes: number;
@@ -109,4 +110,20 @@ export function reservationAccessError(error: unknown): string {
   if (error.response?.status === 400) return 'El QR no corresponde a un espacio de Uash.';
  }
  return 'No pudimos verificar la reserva. Revisá la conexión e intentá nuevamente.';
+}
+
+export async function getRescheduleSlots(code: string, date: string, selection: { date: string; time: string }): Promise<Slot[]> {
+ const response = await api.post<{ data: Slot[] }>('/reservations/reschedule/availability', { code, date, start_time: bookingStart(selection.date, selection.time) });
+ return response.data.data;
+}
+export async function rescheduleReservation(code: string, date: string, selection: { date: string; time: string; espacio: number }): Promise<ReservationAccess> {
+ const response = await api.post<{ data: ReservationAccess }>('/reservations/reschedule', { code, date, start_time: bookingStart(selection.date, selection.time), slot_id: selection.espacio });
+ return response.data.data;
+}
+export function rescheduleError(error: unknown): string {
+ if (axios.isAxiosError(error)) {
+  if (error.response?.status === 409) return 'El turno ya no está disponible o la reserva ya comenzó o fue validada. Consultá nuevamente la reserva y elegí otro turno.';
+  if (error.response?.status === 400) return 'Elegí un horario futuro dentro de 09:00 a 21:00 y los próximos 8 días.';
+ }
+ return reservationAccessError(error);
 }

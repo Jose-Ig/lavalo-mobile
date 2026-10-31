@@ -53,7 +53,6 @@ export default function StartServiceScreen({ navigation }: Props) {
           {permission && !permission.granted && !permission.canAskAgain && <ActionButton surface="light" variant="secondary" label="Abrir configuración de cámara" onPress={() => { void Linking.openSettings(); }} />}
         </>}
         <ActionButton surface="light" variant="secondary" label="Consultar otra reserva" disabled={busy} onPress={() => { setAccess(null); navigation.replace('HaveTurn'); }} />
-        <ActionButton surface="light" variant="secondary" label="Volver al inicio" onPress={() => navigation.navigate('Home')} />
       </View>
     </ScrollView></View>
   </View>;

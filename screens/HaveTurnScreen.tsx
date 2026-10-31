@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -11,7 +11,7 @@ import { homeTheme as colors } from '../src/theme/home';
 type Props = NativeStackScreenProps<RootStackParamList, 'HaveTurn'>;
 export default function HaveTurnScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const { setAccess } = useReservationAccess();
+  const { access, setAccess } = useReservationAccess();
   const [code, setCode] = useState('');
   const [date, setDate] = useState(() => {
     const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Argentina/Cordoba', day: '2-digit', month: '2-digit', year: 'numeric' }).formatToParts(new Date());
@@ -22,6 +22,13 @@ export default function HaveTurnScreen({ navigation }: Props) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
+  useEffect(() => {
+    if (access && reservation && access.reservation.id === reservation.id) {
+      setReservation(access.reservation); setCode(access.code);
+      const [year, month, day] = access.reservation.reservation_date.split('-');
+      setDate(`${day}/${month}/${year}`);
+    }
+  }, [access, reservation]);
   const lookup = async () => {
     if (lock.current) return;
     if (!code.trim()) { setError('Ingresá tu código de reserva.'); return; }
@@ -61,9 +68,9 @@ export default function HaveTurnScreen({ navigation }: Props) {
             <Text style={styles.text}>{new Date(reservation.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</Text>
             <Text style={styles.text}>{reservation.duration_minutes} minutos · {reservation.slot_label}</Text>
             <Text style={styles.text}>{reservation.can_verify_qr ? 'Ya podés escanear el QR de tu espacio.' : reservation.activation_reason === 'too_early' ? 'Podrás validar el QR al comenzar el horario de tu turno.' : reservation.activation_reason === 'expired' ? 'El horario de este turno ya terminó.' : reservation.status === 'cancelled' ? 'Esta reserva está cancelada y no permite activar un espacio.' : 'Esta reserva no está habilitada para activar un espacio.'}</Text>
+            {reservation.can_reschedule && <ActionButton surface="light" variant="secondary" label="Cambiar turno" onPress={() => navigation.navigate('ChangeTurn')} />}
             {reservation.status === 'confirmed' && <ActionButton surface="light" label="Continuar al espacio" onPress={() => navigation.navigate('StartService')} />}
           </View>}
-          <ActionButton surface="light" variant="secondary" label="Volver al inicio" onPress={() => navigation.navigate('Home')} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
