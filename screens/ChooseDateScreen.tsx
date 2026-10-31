@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 import CircleBookingSelector, { BookingSelection } from '../src/components/CircleBookingSelector';
-
-import { Picker } from '@react-native-picker/picker';
+import ActionButton from '../src/components/ActionButton';
 import { getAvailableSlots, apiErrorMessage, Slot } from '../src/services/api';
+import { homeTheme as colors } from '../src/theme/home';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ChooseDate'>;
-
 export default function ChooseDateScreen({ navigation }: Props) {
   const [selection, setSelection] = useState<BookingSelection | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -29,102 +28,81 @@ export default function ChooseDateScreen({ navigation }: Props) {
   }, [selection?.date, selection?.time, selection?.duration]);
   const ready = !!selection && slotId !== null && !loading && !error;
   const insets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.root}>
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.7}>
-          <Text style={styles.backArrow}>{'‹'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Reservá tu lugar</Text>
-      </View>
-
-      <View style={styles.sheet}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <CircleBookingSelector
-            onChange={(s) => setSelection(s)}
-            defaultDuration={60}
-          />
-
-          <Text>{loading ? 'Consultando espacios…' : error || (!slots.length ? 'No hay espacios disponibles para este turno.' : 'Elegí tu espacio')}</Text>
-          {slots.length > 0 && <Picker selectedValue={slotId} onValueChange={value => setSlotId(Number(value))}>
-            {slots.map(slot => <Picker.Item key={slot.id} label={slot.label} value={slot.id} />)}
-          </Picker>}
-          <TouchableOpacity
-            style={[styles.button, !ready && styles.buttonDisabled]}
-            onPress={() => {
-              if (selection && ready && slotId !== null) {
-                navigation.navigate('ReservationForm', { booking: { ...selection, espacio: slotId } });
-              }
-            }}
-            disabled={!ready}
-          >
-            <Text style={styles.buttonText}>Continuar</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+  return <View style={styles.root}>
+    <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => navigation.goBack()}
+        android_ripple={{ color: 'rgba(255,255,255,0.25)', borderless: true }} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+        <Text style={styles.backArrow} accessible={false}>‹</Text>
+      </Pressable>
+      <Text style={styles.headerTitle} accessibilityRole="header">Reservá tu lugar</Text>
     </View>
-  );
-}
+    <View style={styles.sheet}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+        <View style={styles.content}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle} accessibilityRole="header">Elegí tu turno</Text>
+            <Text style={styles.description}>Seleccioná el día, la hora y la duración.</Text>
+            <View style={styles.turnPicker}><CircleBookingSelector onChange={setSelection} defaultDuration={60} /></View>
+          </View>
 
+          <View style={styles.spaceCard}>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle} accessibilityRole="header">Elegí tu espacio</Text>
+              <Text style={styles.description}>Seleccioná dónde querés realizar el lavado.</Text>
+            </View>
+            {loading ? <View style={styles.status} accessibilityLiveRegion="polite">
+              <ActivityIndicator color={colors.blue} />
+              <Text style={styles.statusText}>Consultando espacios…</Text>
+            </View> : error ? <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text> : !selection ?
+              <Text style={styles.statusText}>Elegí un turno con horarios disponibles.</Text> : !slots.length ?
+                <Text style={styles.statusText}>No hay espacios disponibles para este turno. Probá con otro horario.</Text> :
+                <View style={styles.spaceGrid} accessibilityRole="radiogroup" accessibilityLabel="Espacios disponibles">
+                  {slots.map(slot => {
+                    const selected = slotId === slot.id;
+                    return <Pressable key={slot.id} accessibilityRole="radio" accessibilityLabel={slot.label}
+                      accessibilityState={{ checked: selected }} onPress={() => setSlotId(slot.id)}
+                      android_ripple={{ color: '#B7CEEF' }} style={({ pressed }) => [styles.spaceOption, selected && styles.spaceSelected, pressed && styles.pressed]}>
+                      <View style={[styles.radio, selected && styles.radioSelected]}>{selected && <View style={styles.radioDot} />}</View>
+                      <Text style={[styles.spaceLabel, selected && styles.spaceLabelSelected]}>{slot.label}</Text>
+                    </Pressable>;
+                  })}
+                </View>}
+          </View>
+
+          <View style={styles.actions}>
+            <ActionButton label="Continuar" surface="light" disabled={!ready} accessibilityHint="Completá los datos de tu reserva"
+              onPress={() => { if (selection && ready && slotId !== null) navigation.navigate('ReservationForm', { booking: { ...selection, espacio: slotId } }); }} />
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  </View>;
+}
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#4170be',
-  },
-  header: {
-    backgroundColor: '#4170be',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-    gap: 8,
-  },
-  backButton: {
-    padding: 4,
-  },
-  backArrow: {
-    fontSize: 40,
-    color: '#fff',
-    lineHeight: 40,
-    marginTop: -4,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  sheet: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: 'hidden',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-    paddingBottom: 32,
-  },
-  button: {
-    backgroundColor: '#000',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 16,
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 64,
-  },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
+  root: { flex: 1, backgroundColor: colors.blue },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 20, gap: 12 },
+  backButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
+  backArrow: { fontSize: 36, lineHeight: 40, color: '#FFFFFF', marginTop: -3 },
+  headerTitle: { flex: 1, fontSize: 26, lineHeight: 34, fontWeight: '700', color: '#FFFFFF' },
+  sheet: { flex: 1, backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden' },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 28, paddingBottom: 32, alignItems: 'center' },
+  content: { width: '100%', maxWidth: 480, gap: 28 },
+  section: { gap: 8 },
+  sectionTitle: { fontSize: 20, lineHeight: 28, fontWeight: '700', color: colors.ink },
+  description: { fontSize: 15, lineHeight: 22, color: colors.label },
+  turnPicker: { marginTop: 12 },
+  spaceCard: { backgroundColor: '#F0F4FC', borderRadius: 24, borderWidth: 1, borderColor: '#E0E8F7', padding: 20, gap: 20 },
+  spaceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  spaceOption: { flexBasis: '45%', flexGrow: 1, minHeight: Platform.OS === 'ios' ? 52 : 56, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 24, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CCD9ED', overflow: 'hidden' },
+  spaceSelected: { backgroundColor: colors.blue, borderColor: colors.blue },
+  spaceLabel: { flex: 1, fontSize: 16, lineHeight: 22, fontWeight: '600', color: colors.ink },
+  spaceLabelSelected: { color: '#FFFFFF' },
+  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#667B9A', alignItems: 'center', justifyContent: 'center' },
+  radioSelected: { borderColor: '#FFFFFF' },
+  radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FFFFFF' },
+  status: { flexDirection: 'row', gap: 12, alignItems: 'center', paddingVertical: 8 },
+  statusText: { flexShrink: 1, fontSize: 15, lineHeight: 23, color: colors.label },
+  errorText: { fontSize: 15, lineHeight: 23, color: '#A92330' },
+  actions: { alignItems: 'center', paddingTop: 4 },
+  pressed: { opacity: 0.8 },
 });

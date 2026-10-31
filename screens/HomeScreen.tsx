@@ -1,14 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View, ScrollView } from 'react-native';
+import { Animated, Easing, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
-import GlassSurface from '../src/components/GlassSurface';
+import ActionButton from '../src/components/ActionButton';
 import { useAccessibilityPreferences } from '../src/hooks/useAccessibilityPreferences';
 import { bottomBarHeight, homeTheme as colors } from '../src/theme/home';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
-const IOS = Platform.OS === 'ios';
 
 export default function HomeScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
@@ -61,17 +60,8 @@ export default function HomeScreen({ navigation, route }: Props) {
       <Animated.View pointerEvents={ready ? 'auto' : 'none'} accessibilityElementsHidden={!ready} importantForAccessibility={ready ? 'auto' : 'no-hide-descendants'}
         onLayout={event => setActionsHeight(event.nativeEvent.layout.height)}
         style={[styles.actions, { top: actionsTop, opacity: reveal, transform: [{ translateY: intro.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
-        <Pressable accessibilityRole="button" accessibilityHint="Elegí un día y horario para tu lavado" disabled={!ready}
-          android_ripple={{ color: '#D4E2FB' }} onPress={() => navigation.navigate('ChooseDate')}
-          style={({ pressed }) => [styles.button, styles.primary, pressed && styles.primaryPressed]}>
-          <Text style={styles.primaryLabel}>Quiero una reserva</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" accessibilityHint="Consultá el estado de tu reserva y tu pago" disabled={!ready}
-          android_ripple={{ color: '#D4E2FB' }} onPress={() => navigation.navigate('CheckoutStatus')}
-          style={({ pressed }) => [styles.button, styles.secondary, pressed && styles.secondaryPressed]}>
-          {IOS && <GlassSurface dark style={StyleSheet.absoluteFill} />}
-          <Text style={styles.secondaryLabel}>Tengo una reserva</Text>
-        </Pressable>
+        <ActionButton label="Quiero una reserva" disabled={!ready} accessibilityHint="Elegí un día y horario para tu lavado" onPress={() => navigation.navigate('ChooseDate')} />
+        <ActionButton label="Tengo una reserva" variant="secondary" disabled={!ready} accessibilityHint="Consultá el estado de tu reserva y tu pago" onPress={() => navigation.navigate('CheckoutStatus')} />
       </Animated.View>
 
       </ScrollView>
@@ -86,13 +76,6 @@ const styles = StyleSheet.create({
   logoPosition: { position: 'absolute', left: 24, right: 24, alignItems: 'center' },
   logo: { fontSize: 76, lineHeight: 96, fontWeight: '800', letterSpacing: -4, color: colors.onBlue, includeFontPadding: false },
   actions: { position: 'absolute', left: 24, right: 24, alignItems: 'center', gap: 16 },
-  button: { width: '100%', maxWidth: 384, minHeight: IOS ? 56 : 64, borderRadius: IOS ? 30 : 32, paddingHorizontal: 24, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  primary: { backgroundColor: '#FFFFFF', shadowColor: '#173A75', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 2 },
-  primaryPressed: { backgroundColor: '#DCE8FD' },
-  primaryLabel: { color: colors.ink, fontSize: IOS ? 18 : 20, lineHeight: IOS ? 24 : 28, fontWeight: '700', textAlign: 'center' },
-  secondary: { backgroundColor: IOS ? 'transparent' : '#D9E6FF', borderWidth: IOS ? 1 : 0, borderColor: 'rgba(255,255,255,0.32)' },
-  secondaryPressed: { opacity: 0.8 },
-  secondaryLabel: { color: IOS ? '#FFFFFF' : colors.ink, fontSize: IOS ? 18 : 20, lineHeight: IOS ? 24 : 28, fontWeight: '600', textAlign: 'center' },
   toast: { position: 'absolute', bottom: 20, left: 24, right: 24, borderRadius: 20, backgroundColor: colors.ink, padding: 16 },
   toastLabel: { color: '#FFFFFF', textAlign: 'center', fontSize: 15, lineHeight: 22 },
 });
