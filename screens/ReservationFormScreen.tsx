@@ -8,31 +8,34 @@ import ActionButton from '../src/components/ActionButton';
 import { homeTheme as colors } from '../src/theme/home';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ReservationForm'>;
-type Field = 'nombre' | 'telefono';
+type Field = 'nombre' | 'telefono' | 'email';
 export default function ReservationFormScreen({ navigation, route }: Props) {
   const isSubscription = route.params.flowType === 'subscription';
   const booking = isSubscription ? undefined : route.params.booking;
   const subscriptionBooking = isSubscription ? route.params.subscriptionBooking : undefined;
   const insets = useSafeAreaInsets();
   const [nombre, setNombre] = useState('');
-  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
+  const [email, setEmail] = useState('');
   const [telefono, setTelefono] = useState('');
   const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
+  const emailRef = useRef<TextInputInstance>(null);
   const phoneRef = useRef<TextInputInstance>(null);
   const nameRef = useRef<TextInputInstance>(null);
   const touch = (field: Field) => setTouched(previous => ({ ...previous, [field]: true }));
   const errors: Record<Field, string> = {
     nombre: nombre.trim().length < 2 ? 'Ingresá tu nombre (al menos 2 caracteres).' : '',
+    email: email.trim() && (email.trim().length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ? 'Ingresá un email válido.' : '',
     telefono: !/^\d{10}$/.test(telefono) ? 'Ingresá 10 dígitos: código de área y número, sin 0 ni 15.' : '',
   };
   const errorFor = (field: Field) => touched[field] ? errors[field] : '';
   const goBack = () => { Keyboard.dismiss(); navigation.goBack(); };
   const pay = () => {
-    setTouched({ nombre: true, telefono: true });
+    setTouched({ nombre: true, telefono: true, email: true });
     if (errors.nombre) { nameRef.current?.focus(); return; }
     if (errors.telefono) { phoneRef.current?.focus(); return; }
+    if (errors.email) { emailRef.current?.focus(); return; }
     Keyboard.dismiss();
-    const data = { nombre: nombre.trim(), whatsappOptIn, telefono: `+54${telefono}` };
+    const data = { nombre: nombre.trim(), email: email.trim() || undefined, telefono: `+54${telefono}` };
     if (isSubscription && subscriptionBooking) navigation.navigate('SubscriptionPayment', { subscriptionBooking, reservation: { ...data, date: '', time: subscriptionBooking.time, duration: subscriptionBooking.duration, espacio: 1 } });
     else if (booking) navigation.navigate('Payment', { reservation: { ...booking, ...data } });
   };
@@ -61,15 +64,20 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
               <View style={[styles.phone, !!errorFor('telefono') && styles.invalid]}>
                 <Text style={styles.prefix}>+54</Text>
                 <TextInput ref={phoneRef} style={styles.phoneInput} accessibilityLabel="Teléfono celular, código de área y número sin 0 ni 15" placeholder="351 123 4567" placeholderTextColor="#687991" keyboardType="phone-pad" autoComplete="tel-national" textContentType="telephoneNumber"
-                  value={telefono} onBlur={() => touch('telefono')} maxLength={20} returnKeyType="done" onSubmitEditing={pay}
+                  value={telefono} onBlur={() => touch('telefono')} maxLength={20} returnKeyType="next" onSubmitEditing={() => emailRef.current?.focus()}
                   onChangeText={text => { let digits = text.replace(/\D/g, ''); if (digits.length > 10 && digits.startsWith('54')) digits = digits.slice(2); if (digits.length === 11 && digits.startsWith('9')) digits = digits.slice(1); setTelefono(digits); }} />
               </View>
-              <Text style={styles.hint}>Código de área + número, sin 0 ni 15. El código de reserva se envía por SMS.</Text>
+              <Text style={styles.hint}>Código de área + número, sin 0 ni 15.</Text>
               {fieldError('telefono')}
-              <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: whatsappOptIn }} onPress={() => setWhatsappOptIn(value => !value)} style={styles.optIn}>
-                <View style={[styles.checkbox, whatsappOptIn && styles.checkboxSelected]}>{whatsappOptIn && <Text style={styles.checkmark}>✓</Text>}</View>
-                <Text style={styles.optInLabel}>Quiero recibir también el código y la confirmación por WhatsApp.</Text>
-              </Pressable>
+              <Text style={styles.hint}>Enviaremos por WhatsApp tu código de confirmación de turno.</Text>
+            </View>
+            <View style={styles.field}>
+              <Text style={styles.label}>Email (opcional)</Text>
+              <TextInput ref={emailRef} accessibilityLabel="Email opcional" style={[styles.input, !!errorFor('email') && styles.invalid]}
+                value={email} onChangeText={setEmail} onBlur={() => touch('email')} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
+                autoComplete="email" textContentType="emailAddress" maxLength={254} returnKeyType="done" onSubmitEditing={pay} />
+              <Text style={styles.hint}>Agregá tu email en caso de que quieras que el código también se envíe por email.</Text>
+              {fieldError('email')}
             </View>
           </View>
           <View style={styles.actions}>
@@ -104,10 +112,5 @@ const styles = StyleSheet.create({
   hint: { fontSize: 13, lineHeight: 20, color: colors.label },
   error: { color: '#AD2936', fontSize: 13, lineHeight: 20 },
   actions: { alignItems: 'center', gap: 12, paddingTop: 4 },
-  optIn: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 8 },
-  checkbox: { width: 24, height: 24, borderWidth: 1, borderColor: colors.blue, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-  checkboxSelected: { backgroundColor: colors.blue },
-  checkmark: { color: '#FFFFFF', fontWeight: '700' },
-  optInLabel: { flex: 1, fontSize: 14, lineHeight: 22, color: colors.label },
   footnote: { color: colors.label, fontSize: 13, lineHeight: 20, textAlign: 'center' },
 });

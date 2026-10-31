@@ -34,7 +34,7 @@ export interface BookingData {
 
 export interface ReservationData extends BookingData {
   nombre: string;
-  whatsappOptIn?: boolean;
+  email?: string;
   telefono: string;
 }
 
@@ -65,7 +65,7 @@ export function countDayInMonth(dayName: string, year?: number, month?: number):
 
 export interface SubscriptionReservationData {
   nombre: string;
-  whatsappOptIn?: boolean;
+  email?: string;
   telefono: string;
   date: string;
   time: string;

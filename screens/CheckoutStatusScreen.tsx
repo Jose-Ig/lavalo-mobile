@@ -164,7 +164,7 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
           <Text style={styles.cardTitle}>Tu código de reserva</Text>
           <Text selectable style={styles.confirmationCode}>{status.confirmation_code}</Text>
           <Text style={styles.text}>Guardalo para consultar esta reserva y validar el QR de tu espacio desde “Tengo una reserva”. Cada reserva tiene su propio código.</Text>
-          {status.notification_status === 'pending_configuration' && <Text style={styles.text}>Los envíos por SMS y WhatsApp todavía no están configurados. Por ahora guardá este código.</Text>}
+          {status.notification_status === 'pending_configuration' && <Text style={styles.text}>El envío de mensajes todavía no está configurado. Por ahora guardá este código.</Text>}
         </View>}
         {!!message && <Text accessibilityLiveRegion="polite" style={styles.text}>{message}</Text>}
         {!!actionError && <Text accessibilityRole="alert" style={styles.error}>{actionError}</Text>}

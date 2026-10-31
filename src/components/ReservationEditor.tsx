@@ -12,12 +12,13 @@ type Props = { section: 'turn' | 'contact'; value: ReservationData; onSave: (val
 export default function ReservationEditor({ section, value, onSave, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const [nombre, setNombre] = useState(value.nombre);
-  const [whatsappOptIn, setWhatsappOptIn] = useState(value.whatsappOptIn === true);
+  const [email, setEmail] = useState(value.email || '');
   const [phone, setPhone] = useState(value.telefono.replace(/^\+54/, ''));
   const [submitted, setSubmitted] = useState(false);
   const [selection, setSelection] = useState<BookingSelection | null>(value);
   const [availability, setAvailability] = useState<{ key: string; slots: Slot[]; error: string }>({ key: '', slots: [], error: '' });
   const nameRef = useRef<TextInputInstance>(null);
+  const emailRef = useRef<TextInputInstance>(null);
   const phoneRef = useRef<TextInputInstance>(null);
   const key = selection ? `${selection.date}/${selection.time}/${selection.duration}` : '';
   useEffect(() => {
@@ -33,6 +34,7 @@ export default function ReservationEditor({ section, value, onSave, onClose }: P
   const slots = availability.key === key ? availability.slots : [];
   const errors = {
     name: nombre.trim().length < 2 ? 'Ingresá al menos 2 caracteres.' : '',
+    email: email.trim() && (email.trim().length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ? 'Ingresá un email válido.' : '',
     phone: !/^\d{10}$/.test(phone) ? 'Ingresá 10 dígitos, sin 0 ni 15.' : '',
   };
   const save = () => {
@@ -40,7 +42,8 @@ export default function ReservationEditor({ section, value, onSave, onClose }: P
       setSubmitted(true);
       if (errors.name) { nameRef.current?.focus(); return; }
       if (errors.phone) { phoneRef.current?.focus(); return; }
-      Keyboard.dismiss(); onSave({ ...value, nombre: nombre.trim(), whatsappOptIn, telefono: `+54${phone}` });
+      if (errors.email) { emailRef.current?.focus(); return; }
+      Keyboard.dismiss(); onSave({ ...value, nombre: nombre.trim(), email: email.trim() || undefined, telefono: `+54${phone}` });
     } else if (selection && slots.length > 0 && !loading) {
       onSave({ ...value, ...selection, espacio: 0, espacioLabel: undefined });
     }
@@ -60,16 +63,20 @@ export default function ReservationEditor({ section, value, onSave, onClose }: P
             </View>
             <View style={styles.field}><Text style={styles.label}>Teléfono celular</Text>
               <View style={[styles.phone, submitted && !!errors.phone && styles.invalid]}><Text style={styles.label}>+54</Text>
-                <TextInput ref={phoneRef} accessibilityLabel="Teléfono celular sin 0 ni 15" style={styles.phoneInput} value={phone} keyboardType="phone-pad" autoComplete="tel-national" maxLength={20} returnKeyType="done" onSubmitEditing={save}
+                <TextInput ref={phoneRef} accessibilityLabel="Teléfono celular sin 0 ni 15" style={styles.phoneInput} value={phone} keyboardType="phone-pad" autoComplete="tel-national" maxLength={20} returnKeyType="next" onSubmitEditing={() => emailRef.current?.focus()}
                   onChangeText={text => { let digits = text.replace(/\D/g, ''); if (digits.length > 10 && digits.startsWith('54')) digits = digits.slice(2); if (digits.length === 11 && digits.startsWith('9')) digits = digits.slice(1); setPhone(digits); }} />
               </View>
-              <Text style={styles.hint}>Código de área + número, sin 0 ni 15. El código de reserva se envía por SMS.</Text>
+              <Text style={styles.hint}>Código de área + número, sin 0 ni 15.</Text>
               {submitted && !!errors.phone && <Text style={styles.error}>{errors.phone}</Text>}
             </View>
-            <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: whatsappOptIn }} onPress={() => setWhatsappOptIn(previous => !previous)} style={styles.optIn}>
-              <View style={[styles.checkbox, whatsappOptIn && styles.checkboxSelected]}>{whatsappOptIn && <Text style={styles.checkmark}>✓</Text>}</View>
-              <Text style={styles.optInLabel}>Quiero recibir también el código y la confirmación por WhatsApp.</Text>
-            </Pressable>
+            <Text style={styles.hint}>Enviaremos por WhatsApp tu código de confirmación de turno.</Text>
+            <View style={styles.field}><Text style={styles.label}>Email (opcional)</Text>
+              <TextInput ref={emailRef} accessibilityLabel="Email opcional" style={[styles.input, submitted && !!errors.email && styles.invalid]}
+                value={email} onChangeText={setEmail} maxLength={254} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
+                autoComplete="email" textContentType="emailAddress" returnKeyType="done" onSubmitEditing={save} />
+              <Text style={styles.hint}>Agregá tu email en caso de que quieras que el código también se envíe por email.</Text>
+              {submitted && !!errors.email && <Text style={styles.error}>{errors.email}</Text>}
+            </View>
           </> : <>
             <CircleBookingSelector initialSelection={value} defaultDuration={value.duration} onChange={setSelection} />
             <View style={styles.spaceCard}>
@@ -103,10 +110,5 @@ const styles = StyleSheet.create({
   hint: { color: colors.label, fontSize: 14, lineHeight: 22 },
   error: { color: '#AD2936', fontSize: 14, lineHeight: 22 },
   spaceCard: { borderRadius: 24, padding: 20, gap: 16, backgroundColor: '#EFF4FC' },
-  optIn: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 },
-  checkbox: { width: 24, height: 24, borderWidth: 1, borderColor: colors.blue, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-  checkboxSelected: { backgroundColor: colors.blue },
-  checkmark: { color: '#FFFFFF', fontWeight: '700' },
-  optInLabel: { flex: 1, fontSize: 14, lineHeight: 22, color: colors.label },
   footer: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#DCE6F7' },
 });

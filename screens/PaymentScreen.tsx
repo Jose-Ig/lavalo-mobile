@@ -56,7 +56,8 @@ export default function PaymentScreen({ navigation, route }: Props) {
             <View style={styles.cardHeader}><Text style={styles.cardTitle} accessibilityRole="header">Contacto</Text><Pressable accessibilityRole="button" accessibilityLabel="Editar contacto" disabled={saving || !!pending} onPress={() => setEditing('contact')} style={styles.edit}><Text style={[styles.editLabel, (saving || !!pending) && styles.editDisabled]}>Editar</Text></Pressable></View>
             <Detail label="Nombre" value={reservation.nombre} />
             <Detail label="Celular" value={reservation.telefono} />
-            <Detail label="Envío" value={reservation.whatsappOptIn ? 'SMS y WhatsApp' : 'SMS'} />
+            {!!reservation.email && <Detail label="Email" value={reservation.email} />}
+            <Detail label="Envío" value={reservation.email ? 'WhatsApp y email' : 'WhatsApp'} />
           </View>
           <View style={styles.totalCard}>
             <Text style={styles.totalLabel}>Total estimado</Text>
