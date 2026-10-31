@@ -7,7 +7,7 @@ type Props = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'danger';
   surface?: 'brand' | 'light';
   accessibilityHint?: string;
   style?: StyleProp<ViewStyle>;
@@ -15,14 +15,15 @@ type Props = {
 const IOS = Platform.OS === 'ios';
 export default function ActionButton({ label, onPress, disabled = false, variant = 'primary', surface = 'brand', accessibilityHint, style }: Props) {
   const primary = variant === 'primary';
-  const glass = IOS && !primary && surface === 'brand' && !disabled;
-  const backgroundColor = disabled ? '#DFE5EF' : primary ? (surface === 'brand' ? '#FFFFFF' : colors.blue) : glass ? 'transparent' : '#D9E6FF';
-  const color = disabled ? '#647188' : glass || (primary && surface === 'light') ? '#FFFFFF' : colors.ink;
+  const danger = variant === 'danger';
+  const glass = IOS && variant === 'secondary' && surface === 'brand' && !disabled;
+  const backgroundColor = disabled ? '#DFE5EF' : danger ? '#FCE5E7' : primary ? (surface === 'brand' ? '#FFFFFF' : colors.blue) : glass ? 'transparent' : '#D9E6FF';
+  const color = disabled ? '#647188' : danger ? '#9B2C3B' : glass || (primary && surface === 'light') ? '#FFFFFF' : colors.ink;
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} accessibilityHint={accessibilityHint}
-    disabled={disabled} onPress={onPress} android_ripple={{ color: surface === 'brand' ? '#C8DAFA' : '#7198D5' }}
+    disabled={disabled} onPress={onPress} android_ripple={{ color: danger ? '#F1B9C1' : surface === 'brand' ? '#C8DAFA' : '#7198D5' }}
     style={({ pressed }) => [styles.button, { backgroundColor }, primary && !disabled && styles.raised, glass && styles.glassBorder, pressed && styles.pressed, style]}>
     {glass && <GlassSurface dark style={StyleSheet.absoluteFill} />}
-    <Text style={[styles.label, { color, fontWeight: primary ? '700' : '600' }]}>{label}</Text>
+    <Text style={[styles.label, { color, fontWeight: primary || danger ? '700' : '600' }]}>{label}</Text>
   </Pressable>;
 }
 const styles = StyleSheet.create({

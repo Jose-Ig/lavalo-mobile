@@ -128,6 +128,20 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
     } catch (error) { setMessage(apiErrorMessage(error)); }
     finally { lock.current = false; if (mounted.current) setBusy(false); }
   };
+  const confirmCancellation = () => {
+    const booking = currentSession.current?.booking;
+    if (!booking || lock.current) return;
+    const turn = new Date(booking.data.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+    Alert.alert(
+      '¿Cancelar esta reserva?',
+      `Se liberará tu turno del ${turn}. Esta acción no se puede deshacer.\n\nSi ya pagaste, conservá la reserva y consultá el estado del pago antes de cancelar.`,
+      [
+        { text: 'Conservar reserva', style: 'cancel', isPreferred: true },
+        { text: 'Cancelar reserva', style: 'destructive', onPress: () => void release() },
+      ],
+      { cancelable: true },
+    );
+  };
   const confirmed = !!status && status.verified && status.status === 'completed' && status.reservation_status === 'confirmed';
   const canPay = stage === 'ready' || (stage === 'known' && !confirmed && status?.reservation_status === 'pending' && !!status.checkout_url);
   const reservation = session?.booking.data;
@@ -160,9 +174,10 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
           </View>
         </View>}
         <View style={styles.actions}>
-          {canCancel && <ActionButton surface="light" variant="secondary" label="Cancelar reserva" disabled={busy} onPress={() => Alert.alert('Cancelar reserva', 'El turno se libera. Si ya pagaste, consultá el estado antes de cancelar.', [{ text: 'Volver', style: 'cancel' }, { text: 'Cancelar reserva', style: 'destructive', onPress: () => void release() }])} />}
+          {!!session && <ActionButton surface="light" label={busy ? 'Consultando…' : 'Consultar estado'} disabled={busy} onPress={() => { setActionError(''); void refresh(); }} />}
+          {canCancel && <ActionButton surface="light" variant="danger" label="Cancelar reserva" disabled={busy} onPress={confirmCancellation} />}
           {canCreate && <ActionButton surface="light" label="Hacer otra reserva" disabled={busy} onPress={() => { void clearCheckoutSession(reservation?.id).then(() => navigation.navigate('ChooseDate')).catch(() => setMessage('No pudimos guardar el cambio. Reintentá.')); }} />}
-<ActionButton surface="light" variant="secondary" label="Volver al inicio" disabled={busy} onPress={() => navigation.navigate('Home')} />
+          <ActionButton surface="light" variant="secondary" label="Volver al inicio" disabled={busy} onPress={() => navigation.navigate('Home')} />
         </View>
 
       </View>
