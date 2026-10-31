@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 import CircleBookingSelector, { BookingSelection } from '../src/components/CircleBookingSelector';
 import ActionButton from '../src/components/ActionButton';
+import SpaceDropdown from '../src/components/SpaceDropdown';
 import { getAvailableSlots, apiErrorMessage, Slot } from '../src/services/api';
 import { homeTheme as colors } from '../src/theme/home';
 
@@ -56,17 +57,7 @@ export default function ChooseDateScreen({ navigation }: Props) {
             </View> : error ? <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text> : !selection ?
               <Text style={styles.statusText}>Elegí un turno con horarios disponibles.</Text> : !slots.length ?
                 <Text style={styles.statusText}>No hay espacios disponibles para este turno. Probá con otro horario.</Text> :
-                <View style={styles.spaceGrid} accessibilityRole="radiogroup" accessibilityLabel="Espacios disponibles">
-                  {slots.map(slot => {
-                    const selected = slotId === slot.id;
-                    return <Pressable key={slot.id} accessibilityRole="radio" accessibilityLabel={slot.label}
-                      accessibilityState={{ checked: selected }} onPress={() => setSlotId(slot.id)}
-                      android_ripple={{ color: '#B7CEEF' }} style={({ pressed }) => [styles.spaceOption, selected && styles.spaceSelected, pressed && styles.pressed]}>
-                      <View style={[styles.radio, selected && styles.radioSelected]}>{selected && <View style={styles.radioDot} />}</View>
-                      <Text style={[styles.spaceLabel, selected && styles.spaceLabelSelected]}>{slot.label}</Text>
-                    </Pressable>;
-                  })}
-                </View>}
+                <SpaceDropdown slots={slots} value={slotId} onChange={setSlotId} />}
           </View>
 
           <View style={styles.actions}>
@@ -92,14 +83,6 @@ const styles = StyleSheet.create({
   description: { fontSize: 15, lineHeight: 22, color: colors.label },
   turnPicker: { marginTop: 12 },
   spaceCard: { backgroundColor: '#F0F4FC', borderRadius: 24, borderWidth: 1, borderColor: '#E0E8F7', padding: 20, gap: 20 },
-  spaceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  spaceOption: { flexBasis: '45%', flexGrow: 1, minHeight: Platform.OS === 'ios' ? 52 : 56, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 24, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CCD9ED', overflow: 'hidden' },
-  spaceSelected: { backgroundColor: colors.blue, borderColor: colors.blue },
-  spaceLabel: { flex: 1, fontSize: 16, lineHeight: 22, fontWeight: '600', color: colors.ink },
-  spaceLabelSelected: { color: '#FFFFFF' },
-  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#667B9A', alignItems: 'center', justifyContent: 'center' },
-  radioSelected: { borderColor: '#FFFFFF' },
-  radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FFFFFF' },
   status: { flexDirection: 'row', gap: 12, alignItems: 'center', paddingVertical: 8 },
   statusText: { flexShrink: 1, fontSize: 15, lineHeight: 23, color: colors.label },
   errorText: { fontSize: 15, lineHeight: 23, color: '#A92330' },
