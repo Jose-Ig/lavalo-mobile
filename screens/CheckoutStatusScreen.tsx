@@ -154,6 +154,7 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
         {!!heading && <Text style={styles.title} accessibilityRole="header">{heading}</Text>}
         {!!reservation && <View style={styles.reservationCard}>
           <Text style={styles.cardTitle}>Reserva {reservation.reservation_number}</Text>
+          <Text style={styles.text}>Espacio asignado: {reservation.slot_id}</Text>
           <Text style={styles.text}>{new Date(reservation.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</Text>
           <Text style={styles.text}>{reservation.duration_minutes} minutos</Text>
           {!!status && <Text style={styles.total}>{(status.amount_cents / 100).toLocaleString('es-AR', { style: 'currency', currency: status.currency })}</Text>}

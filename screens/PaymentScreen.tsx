@@ -50,7 +50,7 @@ export default function PaymentScreen({ navigation, route }: Props) {
             <View style={styles.cardHeader}><Text style={styles.cardTitle} accessibilityRole="header">Tu turno</Text><Pressable accessibilityRole="button" accessibilityLabel="Editar turno" disabled={saving || !!pending} onPress={() => setEditing('turn')} style={styles.edit}><Text style={[styles.editLabel, (saving || !!pending) && styles.editDisabled]}>Editar</Text></Pressable></View>
             <Text style={styles.date}>{formatDate(reservation.date)}</Text>
             <View style={styles.badges}><Text style={styles.badge}>{reservation.time} hs</Text><Text style={styles.badge}>{reservation.duration} minutos</Text></View>
-            <Detail label="Espacio" value={reservation.espacioLabel || `Espacio ${reservation.espacio}`} />
+            <Detail label="Espacio" value="Asignación automática al reservar" />
           </View>
           <View style={styles.card}>
             <View style={styles.cardHeader}><Text style={styles.cardTitle} accessibilityRole="header">Contacto</Text><Pressable accessibilityRole="button" accessibilityLabel="Editar contacto" disabled={saving || !!pending} onPress={() => setEditing('contact')} style={styles.edit}><Text style={[styles.editLabel, (saving || !!pending) && styles.editDisabled]}>Editar</Text></Pressable></View>

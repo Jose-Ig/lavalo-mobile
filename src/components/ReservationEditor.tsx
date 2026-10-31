@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ReservationData } from '../../App';
 import ActionButton from './ActionButton';
 import CircleBookingSelector, { type BookingSelection } from './CircleBookingSelector';
-import SpaceDropdown from './SpaceDropdown';
 import { apiErrorMessage, getAvailableSlots, type Slot } from '../services/api';
 import { homeTheme as colors } from '../theme/home';
 
@@ -17,7 +16,6 @@ export default function ReservationEditor({ section, value, onSave, onClose }: P
   const [phone, setPhone] = useState(value.telefono.replace(/^\+54/, ''));
   const [submitted, setSubmitted] = useState(false);
   const [selection, setSelection] = useState<BookingSelection | null>(value);
-  const [space, setSpace] = useState<number | null>(value.espacio);
   const [availability, setAvailability] = useState<{ key: string; slots: Slot[]; error: string }>({ key: '', slots: [], error: '' });
   const nameRef = useRef<TextInputInstance>(null);
   const phoneRef = useRef<TextInputInstance>(null);
@@ -27,14 +25,12 @@ export default function ReservationEditor({ section, value, onSave, onClose }: P
     let active = true;
     getAvailableSlots(selection.date, selection.time, selection.duration).then(slots => {
       if (!active) return;
-      setSpace(previous => slots.some(slot => slot.id === previous) ? previous : null);
       setAvailability({ key, slots, error: '' });
     }).catch(error => { if (active) setAvailability({ key, slots: [], error: apiErrorMessage(error) }); });
     return () => { active = false; };
   }, [key, section]);
   const loading = !!selection && availability.key !== key;
   const slots = availability.key === key ? availability.slots : [];
-  const selectedSpace = slots.find(slot => slot.id === space);
   const errors = {
     name: nombre.trim().length < 2 ? 'Ingresá al menos 2 caracteres.' : '',
     phone: !/^\d{10}$/.test(phone) ? 'Ingresá 10 dígitos, sin 0 ni 15.' : '',
@@ -45,8 +41,8 @@ export default function ReservationEditor({ section, value, onSave, onClose }: P
       if (errors.name) { nameRef.current?.focus(); return; }
       if (errors.phone) { phoneRef.current?.focus(); return; }
       Keyboard.dismiss(); onSave({ ...value, nombre: nombre.trim(), whatsappOptIn, telefono: `+54${phone}` });
-    } else if (selection && selectedSpace && !loading) {
-      onSave({ ...value, ...selection, espacio: selectedSpace.id, espacioLabel: selectedSpace.label });
+    } else if (selection && slots.length > 0 && !loading) {
+      onSave({ ...value, ...selection, espacio: 0, espacioLabel: undefined });
     }
   };
   return <Modal visible animationType="slide" onRequestClose={onClose}>
@@ -76,18 +72,16 @@ export default function ReservationEditor({ section, value, onSave, onClose }: P
             </Pressable>
           </> : <>
             <CircleBookingSelector initialSelection={value} defaultDuration={value.duration} onChange={setSelection} />
-            <View style={styles.spaceCard}><Text style={styles.label}>Elegí tu espacio</Text>
+            <View style={styles.spaceCard}><Text style={styles.label}>Disponibilidad del turno</Text>
               {!selection ? <Text style={styles.hint}>Elegí un turno con horarios disponibles.</Text> : loading ? <ActivityIndicator color={colors.blue} /> : availability.error ?
-                <Text accessibilityRole="alert" style={styles.error}>{availability.error}</Text> : !slots.length ? <Text style={styles.hint}>No hay espacios disponibles. Elegí otro turno.</Text> : <>
-                  <SpaceDropdown slots={slots} value={space} onChange={setSpace} />
-                  {!selectedSpace && <Text style={styles.hint}>Elegí un espacio disponible para este turno.</Text>}
-                </>}
+                <Text accessibilityRole="alert" style={styles.error}>{availability.error}</Text> : !slots.length ? <Text style={styles.hint}>No hay espacios disponibles. Elegí otro turno.</Text> : <Text style={styles.hint}>Hay disponibilidad. El espacio se asigna automáticamente.</Text>}
+
             </View>
           </>}
         </View>
       </ScrollView>
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <ActionButton surface="light" label="Guardar cambios" disabled={section === 'turn' && (!selection || loading || !selectedSpace || !!availability.error)} onPress={save} />
+        <ActionButton surface="light" label="Guardar cambios" disabled={section === 'turn' && (!selection || loading || !slots.length || !!availability.error)} onPress={save} />
       </View>
     </KeyboardAvoidingView>
   </Modal>;

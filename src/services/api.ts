@@ -25,13 +25,15 @@ export interface BookingResponse { data: Reservation; access_token: string }
 export const bookingStart = (date: string, time: string) => `${date}T${time}:00-03:00`;
 export async function getAvailableSlots(date: string, time: string, duration: number): Promise<Slot[]> {
   const response = await api.get<{ data: Slot[] }>('/available-slots', {
-    params: { start_time: bookingStart(date, time), duration_minutes: duration },
+    params: { start_time: bookingStart(date, time), duration_minutes: duration, _ts: Date.now() },
+    headers: { 'Cache-Control': 'no-cache' },
   });
+  if (!Array.isArray(response.data.data)) throw new Error('Invalid availability response');
   return response.data.data;
 }
 export async function createReservation(r: ReservationData): Promise<BookingResponse> {
   const response = await api.post<BookingResponse>('/reservations', {
-    slot_id: r.espacio, start_time: bookingStart(r.date, r.time),
+    start_time: bookingStart(r.date, r.time),
     duration_minutes: r.duration, name: r.nombre, whatsapp_opt_in: r.whatsappOptIn === true, phone: r.telefono,
   });
   return response.data;
@@ -116,8 +118,8 @@ export async function getRescheduleSlots(code: string, date: string, selection: 
  const response = await api.post<{ data: Slot[] }>('/reservations/reschedule/availability', { code, date, start_time: bookingStart(selection.date, selection.time) });
  return response.data.data;
 }
-export async function rescheduleReservation(code: string, date: string, selection: { date: string; time: string; espacio: number }): Promise<ReservationAccess> {
- const response = await api.post<{ data: ReservationAccess }>('/reservations/reschedule', { code, date, start_time: bookingStart(selection.date, selection.time), slot_id: selection.espacio });
+export async function rescheduleReservation(code: string, date: string, selection: { date: string; time: string }): Promise<ReservationAccess> {
+ const response = await api.post<{ data: ReservationAccess }>('/reservations/reschedule', { code, date, start_time: bookingStart(selection.date, selection.time) });
  return response.data.data;
 }
 export function rescheduleError(error: unknown): string {

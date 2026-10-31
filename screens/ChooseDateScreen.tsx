@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 import CircleBookingSelector, { BookingSelection } from '../src/components/CircleBookingSelector';
 import ActionButton from '../src/components/ActionButton';
-import SpaceDropdown from '../src/components/SpaceDropdown';
 import { getAvailableSlots, apiErrorMessage, Slot } from '../src/services/api';
 import { homeTheme as colors } from '../src/theme/home';
 
@@ -13,26 +13,31 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ChooseDate'>;
 export default function ChooseDateScreen({ navigation }: Props) {
   const [selection, setSelection] = useState<BookingSelection | null>(null);
   const [availability, setAvailability] = useState<{ key: string; slots: Slot[]; status: 'loading' | 'ready' | 'error'; error: string }>({ key: '', slots: [], status: 'ready', error: '' });
-  const [slotId, setSlotId] = useState<number | null>(null);
+  const [retry, setRetry] = useState(0);
   const selectionKey = selection ? `${selection.date}/${selection.time}/${selection.duration}` : '';
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let active = true;
-    if (!selection) { setAvailability({ key: '', slots: [], status: 'ready', error: '' }); setSlotId(null); return; }
-    setAvailability({ key: selectionKey, slots: [], status: 'loading', error: '' });
-    getAvailableSlots(selection.date, selection.time, selection.duration)
-      .then(items => {
-        if (!active) return;
-        setSlotId(previous => items.some(item => item.id === previous) ? previous : items[0]?.id ?? null);
-        setAvailability({ key: selectionKey, slots: items, status: 'ready', error: '' });
-      })
-      .catch(error => { if (active) { setSlotId(null); setAvailability({ key: selectionKey, slots: [], status: 'error', error: apiErrorMessage(error) }); } });
-    return () => { active = false; };
-  }, [selectionKey]);
+    let request = 0;
+    if (!selection) { setAvailability({ key: '', slots: [], status: 'ready', error: '' }); return; }
+    const load = () => {
+      const current = ++request;
+      setAvailability(previous => previous.key === selectionKey && previous.status === 'ready' ? previous : { key: selectionKey, slots: [], status: 'loading', error: '' });
+      getAvailableSlots(selection.date, selection.time, selection.duration)
+        .then(items => {
+          if (!active || current !== request) return;
+          setAvailability({ key: selectionKey, slots: items, status: 'ready', error: '' });
+        })
+        .catch(error => { if (active && current === request) { setAvailability({ key: selectionKey, slots: [], status: 'error', error: apiErrorMessage(error) }); } });
+    };
+    load();
+    const timer = setInterval(() => { if (AppState.currentState === 'active') load(); }, 15000);
+    const listener = AppState.addEventListener('change', state => { if (state === 'active') load(); });
+    return () => { active = false; request++; clearInterval(timer); listener.remove(); };
+  }, [selectionKey, retry]));
   const slots = availability.key === selectionKey ? availability.slots : [];
   const loading = !!selection && (availability.key !== selectionKey || availability.status === 'loading');
   const error = availability.key === selectionKey ? availability.error : '';
-  const selectedSlot = slots.find(slot => slot.id === slotId);
-  const ready = Boolean(selection && selectedSlot && !loading && !error);
+  const ready = Boolean(selection && slots.length > 0 && !loading && !error);
   const insets = useSafeAreaInsets();
   return <View style={styles.root}>
     <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
@@ -53,8 +58,8 @@ export default function ChooseDateScreen({ navigation }: Props) {
 
           <View style={styles.spaceCard}>
             <View style={styles.section}>
-              <Text style={styles.sectionTitle} accessibilityRole="header">Elegí tu espacio</Text>
-              <Text style={styles.description}>Seleccioná dónde querés realizar el lavado.</Text>
+              <Text style={styles.sectionTitle} accessibilityRole="header">Disponibilidad del turno</Text>
+              <Text style={styles.description}>Asignamos tu espacio automáticamente al reservar.</Text>
             </View>
             {loading ? <View style={styles.status} accessibilityLiveRegion="polite">
               <ActivityIndicator color={colors.blue} />
@@ -62,12 +67,13 @@ export default function ChooseDateScreen({ navigation }: Props) {
             </View> : error ? <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text> : !selection ?
               <Text style={styles.statusText}>Elegí un turno con horarios disponibles.</Text> : !slots.length ?
                 <Text style={styles.statusText}>No hay espacios disponibles para este turno. Probá con otro horario.</Text> :
-                <SpaceDropdown slots={slots} value={slotId} onChange={setSlotId} />}
+                <Text style={styles.statusText}>Hay disponibilidad para este turno.</Text>}
+            {!!selection && !loading && (!!error || !slots.length) && <ActionButton surface="light" variant="secondary" label="Reintentar disponibilidad" onPress={() => setRetry(previous => previous + 1)} />}
           </View>
 
           <View style={styles.actions}>
             <ActionButton label={loading ? 'Consultando disponibilidad…' : 'Continuar'} surface="light" disabled={!ready} accessibilityHint="Completá los datos de tu reserva"
-              onPress={() => { if (selection && ready && slotId !== null) navigation.navigate('ReservationForm', { booking: { ...selection, espacio: slotId, espacioLabel: selectedSlot?.label } }); }} />
+              onPress={() => { if (selection && ready) navigation.navigate('ReservationForm', { booking: { ...selection, espacio: 0, espacioLabel: undefined } }); }} />
           </View>
         </View>
       </ScrollView>

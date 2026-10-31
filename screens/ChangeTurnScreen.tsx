@@ -5,7 +5,6 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 import ActionButton from '../src/components/ActionButton';
 import CircleBookingSelector, { type BookingSelection } from '../src/components/CircleBookingSelector';
-import SpaceDropdown from '../src/components/SpaceDropdown';
 import { useReservationAccess } from '../src/context/ReservationAccessContext';
 import { getRescheduleSlots, rescheduleReservation, rescheduleError, type Slot } from '../src/services/api';
 import { homeTheme as colors } from '../src/theme/home';
@@ -20,7 +19,6 @@ export default function ChangeTurnScreen({ navigation }: Props) {
     duration: access.reservation.duration_minutes, espacio: access.reservation.slot_id,
   } : undefined;
   const [selection, setSelection] = useState<BookingSelection | null>(initial || null);
-  const [space, setSpace] = useState<number | null>(initial?.espacio || null);
   const [availability, setAvailability] = useState<{ key: string; slots: Slot[]; error: string }>({ key: '', slots: [], error: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -33,20 +31,18 @@ export default function ChangeTurnScreen({ navigation }: Props) {
     let active = true;
     getRescheduleSlots(access.code, access.reservation.reservation_date, selection).then(slots => {
       if (!active) return;
-      setSpace(previous => slots.some(slot => slot.id === previous) ? previous : null);
       setAvailability({ key, slots, error: '' });
     }).catch(error => { if (active) setAvailability({ key, slots: [], error: rescheduleError(error) }); });
     return () => { active = false; };
   }, [key, access]);
   const loading = !!selection && availability.key !== key;
   const slots = availability.key === key ? availability.slots : [];
-  const selected = slots.find(slot => slot.id === space);
-  const unchanged = !!initial && selection?.date === initial.date && selection.time === initial.time && space === initial.espacio;
+  const unchanged = !!initial && selection?.date === initial.date && selection.time === initial.time;
   const save = async () => {
-    if (lock.current || !access || !selection || !selected || loading) return;
+    if (lock.current || !access || !selection || !slots.length || loading) return;
     lock.current = true; setSaving(true); setError('');
     try {
-      const result = await rescheduleReservation(access.code, access.reservation.reservation_date, { ...selection, espacio: selected.id });
+      const result = await rescheduleReservation(access.code, access.reservation.reservation_date, selection);
       setAccess({ code: result.code, reservation: result });
       if (mounted.current) {
         Alert.alert('Turno actualizado', `Tu reserva es ${result.reservation_number}.\nCódigo: ${result.code}. Guardá el código y la nueva fecha para consultar tu reserva.`, [{ text: 'Entendido', onPress: () => navigation.goBack() }], { cancelable: false });
@@ -68,11 +64,11 @@ export default function ChangeTurnScreen({ navigation }: Props) {
             <CircleBookingSelector initialSelection={initial} defaultDuration={access.reservation.duration_minutes} fixedDuration onChange={setSelection} />
           </View>
           <View style={styles.card} pointerEvents={saving ? 'none' : 'auto'}>
-            <Text style={styles.label}>Elegí tu espacio</Text>
-            {!selection ? <Text style={styles.text}>Elegí un día y horario.</Text> : loading ? <ActivityIndicator color={colors.blue} /> : availability.error ? <Text style={styles.error}>{availability.error}</Text> : !slots.length ? <Text style={styles.text}>No hay espacios disponibles. Elegí otro turno.</Text> : <SpaceDropdown slots={slots} value={space} onChange={setSpace} />}
+            <Text style={styles.label}>Disponibilidad del turno</Text>
+            {!selection ? <Text style={styles.text}>Elegí un día y horario.</Text> : loading ? <ActivityIndicator color={colors.blue} /> : availability.error ? <Text style={styles.error}>{availability.error}</Text> : !slots.length ? <Text style={styles.text}>No hay espacios disponibles. Elegí otro turno.</Text> : <Text style={styles.text}>Hay disponibilidad. Asignamos el espacio automáticamente.</Text>}
           </View>
           {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-          <ActionButton surface="light" label={saving ? 'Guardando…' : 'Guardar nuevo turno'} disabled={saving || loading || !selection || !selected || !!availability.error || unchanged} onPress={() => void save()} />
+          <ActionButton surface="light" label={saving ? 'Guardando…' : 'Guardar nuevo turno'} disabled={saving || loading || !selection || !slots.length || !!availability.error || unchanged} onPress={() => void save()} />
           <ActionButton surface="light" variant="secondary" label="Conservar mi turno" disabled={saving} onPress={() => navigation.goBack()} />
         </>}
       </View>
