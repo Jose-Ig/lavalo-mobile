@@ -59,9 +59,8 @@ export default function PaymentScreen({ navigation, route }: Props) {
             <Detail label="Envío" value={reservation.email ? 'WhatsApp y email' : 'WhatsApp'} />
           </View>
           <View style={styles.totalCard}>
-            <Text style={styles.totalLabel}>Total estimado</Text>
+            <Text style={styles.totalLabel}>Total</Text>
             <Text style={styles.total}>{total.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })}<Text style={styles.currency}> ARS</Text></Text>
-            <Text style={styles.description}>El importe definitivo se confirma al preparar el pago.</Text>
           </View>
           <View style={styles.actions}>
             {pending && <Text style={styles.pending} accessibilityLiveRegion="polite">Reserva {pending.data.reservation_number} pendiente.{pending.data.expires_at ? ` Vence a las ${new Date(pending.data.expires_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}.` : ''} Se confirma después de verificar el pago.</Text>}
