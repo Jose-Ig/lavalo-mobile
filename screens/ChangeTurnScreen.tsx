@@ -65,7 +65,7 @@ export default function ChangeTurnScreen({ navigation }: Props) {
           </View>
           <View style={styles.card} pointerEvents={saving ? 'none' : 'auto'}>
             <Text style={styles.label}>Disponibilidad del turno</Text>
-            {!selection ? <Text style={styles.text}>Elegí un día y horario.</Text> : loading ? <ActivityIndicator color={colors.blue} /> : availability.error ? <Text style={styles.error}>{availability.error}</Text> : !slots.length ? <Text style={styles.text}>No hay espacios disponibles. Elegí otro turno.</Text> : <Text style={styles.text}>Hay disponibilidad. Asignamos el espacio automáticamente.</Text>}
+            {!selection ? <Text style={styles.text}>Elegí un día y horario.</Text> : loading ? <ActivityIndicator color={colors.blue} /> : availability.error ? <Text style={styles.error}>{availability.error}</Text> : !slots.length ? <Text accessibilityLiveRegion="polite" style={styles.error}>No hay disponibilidad para este turno.</Text> : <Text style={styles.text}>Hay disponibilidad para este turno.</Text>}
           </View>
           {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
           <ActionButton surface="light" label={saving ? 'Guardando…' : 'Guardar nuevo turno'} disabled={saving || loading || !selection || !slots.length || !!availability.error || unchanged} onPress={() => void save()} />

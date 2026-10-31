@@ -59,14 +59,13 @@ export default function ChooseDateScreen({ navigation }: Props) {
           <View style={styles.spaceCard}>
             <View style={styles.section}>
               <Text style={styles.sectionTitle} accessibilityRole="header">Disponibilidad del turno</Text>
-              <Text style={styles.description}>Asignamos tu espacio automáticamente al reservar.</Text>
             </View>
             {loading ? <View style={styles.status} accessibilityLiveRegion="polite">
               <ActivityIndicator color={colors.blue} />
               <Text style={styles.statusText}>Consultando espacios…</Text>
             </View> : error ? <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text> : !selection ?
               <Text style={styles.statusText}>Elegí un turno con horarios disponibles.</Text> : !slots.length ?
-                <Text style={styles.statusText}>No hay espacios disponibles para este turno. Probá con otro horario.</Text> :
+                <Text accessibilityLiveRegion="polite" style={styles.errorText}>No hay disponibilidad para este turno.</Text> :
                 <Text style={styles.statusText}>Hay disponibilidad para este turno.</Text>}
             {!!selection && !loading && (!!error || !slots.length) && <ActionButton surface="light" variant="secondary" label="Reintentar disponibilidad" onPress={() => setRetry(previous => previous + 1)} />}
           </View>
