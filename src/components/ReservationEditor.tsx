@@ -1,3 +1,4 @@
+import type { TextInputInstance } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,8 +19,8 @@ export default function ReservationEditor({ section, value, onSave, onClose }: P
   const [selection, setSelection] = useState<BookingSelection | null>(value);
   const [space, setSpace] = useState<number | null>(value.espacio);
   const [availability, setAvailability] = useState<{ key: string; slots: Slot[]; error: string }>({ key: '', slots: [], error: '' });
-  const nameRef = useRef<TextInput>(null);
-  const phoneRef = useRef<TextInput>(null);
+  const nameRef = useRef<TextInputInstance>(null);
+  const phoneRef = useRef<TextInputInstance>(null);
   const key = selection ? `${selection.date}/${selection.time}/${selection.duration}` : '';
   useEffect(() => {
     if (section !== 'turn' || !selection) return;

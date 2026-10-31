@@ -1,3 +1,4 @@
+import type { ScrollViewInstance } from 'react-native';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
@@ -59,7 +60,7 @@ interface WheelPickerProps<T> {
 }
 
 function WheelPicker<T>({ data, selectedIndex, onSelect }: WheelPickerProps<T>) {
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const momentumActive = useRef(false);
 
   useEffect(() => {

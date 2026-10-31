@@ -1,3 +1,4 @@
+import type { ViewInstance } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -7,7 +8,7 @@ import { homeTheme as colors } from '../theme/home';
 type Props = { slots: Slot[]; value: number | null; onChange: (id: number) => void };
 type MenuPosition = { top: number; left: number; width: number; maxHeight: number };
 export default function SpaceDropdown({ slots, value, onChange }: Props) {
-  const anchor = useRef<View>(null);
+  const anchor = useRef<ViewInstance>(null);
   const { width, height } = useWindowDimensions();
   const [menu, setMenu] = useState<MenuPosition | null>(null);
   const selected = slots.find(slot => slot.id === value);

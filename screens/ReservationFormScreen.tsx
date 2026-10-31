@@ -1,3 +1,4 @@
+import type { TextInputInstance } from 'react-native';
 import React, { useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,8 +18,8 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
   const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [telefono, setTelefono] = useState('');
   const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
-  const phoneRef = useRef<TextInput>(null);
-  const nameRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInputInstance>(null);
+  const nameRef = useRef<TextInputInstance>(null);
   const touch = (field: Field) => setTouched(previous => ({ ...previous, [field]: true }));
   const errors: Record<Field, string> = {
     nombre: nombre.trim().length < 2 ? 'Ingresá tu nombre (al menos 2 caracteres).' : '',

@@ -1,3 +1,4 @@
+import type { TextInputInstance } from 'react-native';
 import React, { useMemo, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +11,7 @@ const normalize = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036
 export default function VehicleModelPicker({ value, onChange, error }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const input = useRef<TextInput>(null);
+  const input = useRef<TextInputInstance>(null);
   const insets = useSafeAreaInsets();
   const results = useMemo(() => VEHICLE_MODELS_WITH_OTHER.filter(model => model.modelo !== 'Otro' && normalize(model.modelo).includes(normalize(search))), [search]);
   const choose = (model: VehicleModel) => { onChange(model); setOpen(false); };
