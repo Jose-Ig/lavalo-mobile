@@ -32,6 +32,7 @@ export interface BookingData {
 
 export interface ReservationData extends BookingData {
   nombre: string;
+  email?: string;
   telefono: string;
   patente: string;
   modelo: string;
@@ -65,6 +66,7 @@ export function countDayInMonth(dayName: string, year?: number, month?: number):
 
 export interface SubscriptionReservationData {
   nombre: string;
+  email?: string;
   telefono: string;
   patente: string;
   modelo: string;

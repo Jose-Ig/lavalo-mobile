@@ -10,7 +10,7 @@ import VehicleModelPicker from '../src/components/VehicleModelPicker';
 import { homeTheme as colors } from '../src/theme/home';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ReservationForm'>;
-type Field = 'nombre' | 'telefono' | 'modelo' | 'patente' | 'dimensiones';
+type Field = 'nombre' | 'email' | 'telefono' | 'modelo' | 'patente' | 'dimensiones';
 export default function ReservationFormScreen({ navigation, route }: Props) {
   const isSubscription = route.params.flowType === 'subscription';
   const booking = isSubscription ? undefined : route.params.booking;
@@ -18,11 +18,13 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState<0 | 1>(0);
   const [nombre, setNombre] = useState('');
+  const [email, setEmail] = useState('');
   const [telefono, setTelefono] = useState('');
   const [modelo, setModelo] = useState<VehicleModel | null>(null);
   const [patente, setPatente] = useState('');
   const [dimensiones, setDimensiones] = useState('');
   const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
+  const emailRef = useRef<TextInput>(null);
   const phoneRef = useRef<TextInput>(null);
   const nameRef = useRef<TextInput>(null);
   const plateRef = useRef<TextInput>(null);
@@ -31,6 +33,7 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
   const touch = (field: Field) => setTouched(previous => ({ ...previous, [field]: true }));
   const errors: Record<Field, string> = {
     nombre: nombre.trim().length < 2 ? 'Ingresá tu nombre (al menos 2 caracteres).' : '',
+    email: email.trim() && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || email.trim().length > 254) ? 'Ingresá un email válido.' : '',
     telefono: !/^\d{10}$/.test(telefono) ? 'Ingresá 10 dígitos: código de área y número, sin 0 ni 15.' : '',
     modelo: !modelo ? 'Seleccioná el modelo de tu vehículo.' : '',
     patente: !/^[A-Z0-9]{6,12}$/.test(patente) ? 'Ingresá entre 6 y 12 letras o números, sin espacios.' : '',
@@ -44,19 +47,20 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
   }, [step]));
   useEffect(() => { scrollRef.current?.scrollTo({ y: 0, animated: false }); }, [step]);
   const next = () => {
-    setTouched(previous => ({ ...previous, nombre: true, telefono: true }));
+    setTouched(previous => ({ ...previous, nombre: true, email: true, telefono: true }));
     if (errors.nombre) { nameRef.current?.focus(); return; }
+    if (errors.email) { emailRef.current?.focus(); return; }
     if (errors.telefono) { phoneRef.current?.focus(); return; }
     Keyboard.dismiss(); setStep(1);
   };
   const pay = () => {
-    setTouched({ nombre: true, telefono: true, modelo: true, patente: true, dimensiones: true });
-    if (errors.nombre || errors.telefono) { setStep(0); return; }
+    setTouched({ nombre: true, email: true, telefono: true, modelo: true, patente: true, dimensiones: true });
+    if (errors.nombre || errors.email || errors.telefono) { setStep(0); return; }
     if (errors.modelo) return;
     if (errors.patente) { plateRef.current?.focus(); return; }
     if (errors.dimensiones) { dimensionsRef.current?.focus(); return; }
     Keyboard.dismiss();
-    const data = { nombre: nombre.trim(), telefono: `+54${telefono}`, patente, modelo: modelo!.modelo, dimensiones: modelo!.modelo === 'Otro' ? dimensiones.trim() : modelo!.dimensiones };
+    const data = { nombre: nombre.trim(), email: email.trim(), telefono: `+54${telefono}`, patente, modelo: modelo!.modelo, dimensiones: modelo!.modelo === 'Otro' ? dimensiones.trim() : modelo!.dimensiones };
     if (isSubscription && subscriptionBooking) navigation.navigate('SubscriptionPayment', { subscriptionBooking, reservation: { ...data, date: '', time: subscriptionBooking.time, duration: subscriptionBooking.duration, espacio: 1 } });
     else if (booking) navigation.navigate('Payment', { reservation: { ...booking, ...data } });
   };
@@ -76,15 +80,22 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
             </View>)}
           </View>
           <View style={styles.intro}>
-            <Text accessibilityRole="header" style={styles.title}>{step === 0 ? '¿Quién viene al lavado?' : 'Contanos sobre tu vehículo'}</Text>
-            <Text style={styles.description}>{step === 0 ? 'Solo necesitamos tu nombre y un teléfono de contacto.' : 'Elegí el modelo e ingresá la patente.'}</Text>
+            <Text accessibilityRole="header" style={styles.title}>{step === 0 ? '¿Para quién es la reserva?' : 'Contanos sobre tu vehículo'}</Text>
+            <Text style={styles.description}>{step === 0 ? 'Completá tus datos de contacto para la reserva.' : 'Elegí el modelo e ingresá la patente.'}</Text>
           </View>
           {step === 0 ? <View style={styles.fields}>
             <View style={styles.field}>
               <Text style={styles.label}>Nombre completo</Text>
-              <TextInput ref={nameRef} style={[styles.input, !!errorFor('nombre') && styles.invalid]} accessibilityLabel="Nombre completo" placeholder="Por ejemplo, José Prieto" placeholderTextColor="#687991"
-                value={nombre} onChangeText={setNombre} onBlur={() => touch('nombre')} maxLength={100} autoComplete="name" textContentType="name" autoCapitalize="words" returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => phoneRef.current?.focus()} />
+              <TextInput ref={nameRef} style={[styles.input, !!errorFor('nombre') && styles.invalid]} accessibilityLabel="Nombre completo" placeholderTextColor="#687991"
+                value={nombre} onChangeText={setNombre} onBlur={() => touch('nombre')} maxLength={100} autoComplete="name" textContentType="name" autoCapitalize="words" returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => emailRef.current?.focus()} />
               {fieldError('nombre')}
+            </View>
+            <View style={styles.field}>
+              <Text style={styles.label}>Email (opcional)</Text>
+              <TextInput ref={emailRef} accessibilityLabel="Email, opcional" style={[styles.input, !!errorFor('email') && styles.invalid]}
+                value={email} onChangeText={setEmail} onBlur={() => touch('email')} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
+                autoComplete="email" textContentType="emailAddress" maxLength={254} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => phoneRef.current?.focus()} />
+              {fieldError('email')}
             </View>
             <View style={styles.field}>
               <Text style={styles.label}>WhatsApp</Text>
@@ -99,7 +110,7 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
             </View>
           </View> : <>
             <View style={styles.contactSummary}>
-              <View style={styles.summaryText}><Text style={styles.summaryName}>{nombre.trim()}</Text><Text style={styles.hint}>+54 {telefono}</Text></View>
+              <View style={styles.summaryText}><Text style={styles.summaryName}>{nombre.trim()}</Text><Text style={styles.hint}>+54 {telefono}</Text>{!!email.trim() && <Text style={styles.hint}>{email.trim()}</Text>}</View>
               <Pressable accessibilityRole="button" accessibilityLabel="Editar datos de contacto" style={styles.edit} onPress={() => setStep(0)}><Text style={styles.editLabel}>Editar</Text></Pressable>
             </View>
             <View style={styles.fields}>
@@ -110,7 +121,7 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
               </View>
               <View style={styles.field}>
                 <Text style={styles.label}>Patente</Text>
-                <TextInput ref={plateRef} accessibilityLabel="Patente del vehículo" style={[styles.input, styles.plate, !!errorFor('patente') && styles.invalid]} placeholder="AB123CD o ABC123" placeholderTextColor="#687991"
+                <TextInput ref={plateRef} accessibilityLabel="Patente del vehículo" style={[styles.input, styles.plate, !!errorFor('patente') && styles.invalid]} placeholder="Patente o patente provisional" placeholderTextColor="#687991"
                   value={patente} autoCapitalize="characters" autoCorrect={false} maxLength={12} onChangeText={text => setPatente(text.toUpperCase().replace(/[^A-Z0-9]/g, ''))} onBlur={() => touch('patente')}
                   returnKeyType={modelo?.modelo === 'Otro' ? 'next' : 'done'} onSubmitEditing={() => modelo?.modelo === 'Otro' ? dimensionsRef.current?.focus() : pay()} />
                 {fieldError('patente')}

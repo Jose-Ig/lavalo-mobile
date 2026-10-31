@@ -10,6 +10,7 @@ const api = axios.create({
 export interface Slot { id: number; label: string; is_available: boolean }
 export interface Reservation {
   id: number;
+  email?: string;
   slot_id: number;
   start_time: string;
   end_time: string;
@@ -29,7 +30,7 @@ export async function getAvailableSlots(date: string, time: string, duration: nu
 export async function createReservation(r: ReservationData): Promise<BookingResponse> {
   const response = await api.post<BookingResponse>('/reservations', {
     slot_id: r.espacio, start_time: bookingStart(r.date, r.time),
-    duration_minutes: r.duration, name: r.nombre, phone: r.telefono,
+    duration_minutes: r.duration, name: r.nombre, email: r.email?.trim() || undefined, phone: r.telefono,
     vehicle_plate: r.patente, vehicle_model: r.modelo,
   });
   return response.data;
