@@ -76,7 +76,7 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
               <TextInput ref={emailRef} accessibilityLabel="Email opcional" style={[styles.input, !!errorFor('email') && styles.invalid]}
                 value={email} onChangeText={setEmail} onBlur={() => touch('email')} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
                 autoComplete="email" textContentType="emailAddress" maxLength={254} returnKeyType="done" onSubmitEditing={pay} />
-              <Text style={styles.hint}>Agregá tu email en caso de que quieras que el código también se envíe por email.</Text>
+              <Text style={styles.hint}>En caso de que quieras que el código también se envíe por email.</Text>
               {fieldError('email')}
             </View>
           </View>

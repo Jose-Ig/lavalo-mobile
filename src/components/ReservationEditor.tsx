@@ -74,7 +74,7 @@ export default function ReservationEditor({ section, value, onSave, onClose }: P
               <TextInput ref={emailRef} accessibilityLabel="Email opcional" style={[styles.input, submitted && !!errors.email && styles.invalid]}
                 value={email} onChangeText={setEmail} maxLength={254} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
                 autoComplete="email" textContentType="emailAddress" returnKeyType="done" onSubmitEditing={save} />
-              <Text style={styles.hint}>Agregá tu email en caso de que quieras que el código también se envíe por email.</Text>
+              <Text style={styles.hint}>En caso de que quieras que el código también se envíe por email.</Text>
               {submitted && !!errors.email && <Text style={styles.error}>{errors.email}</Text>}
             </View>
           </> : <>
