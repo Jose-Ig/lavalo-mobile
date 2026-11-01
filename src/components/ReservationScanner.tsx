@@ -46,7 +46,7 @@ export default function ReservationScanner({ reservation, onVerified, onClose }:
  return <Modal visible animationType="slide" onRequestClose={()=>{if(!lock.current)onClose();}}>
   <ScrollView style={{ flex: 1, backgroundColor: '#FFFFFF' }} contentContainerStyle={[styles.root,{paddingTop:insets.top+24,paddingBottom:Math.max(insets.bottom,24)}]} accessibilityViewIsModal>
    <Text style={styles.title}>Escaneá el QR de tu espacio</Text>
-   <Text style={styles.text}>{formatSpaceLabel(reservation.slot_label)} · Reserva {reservation.reservation_number}</Text>
+   <Text style={styles.text}>{formatSpaceLabel(reservation.slot_label)} - Reserva {reservation.code}</Text>
    <Text style={styles.text}>Se verifica que el QR corresponda a tu espacio, dentro del horario de tu turno y con el pago confirmado.</Text>
    {scanning && permission?.granted && <View style={styles.camera}><CameraView style={StyleSheet.absoluteFill} facing="back" barcodeScannerSettings={{barcodeTypes:['qr']}} onBarcodeScanned={({data})=>{void scanned(data);}} /></View>}
    {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}

@@ -95,7 +95,7 @@ export interface ReservationAccess {
  id: number; code: string; slot_id: number; slot_label: string;
  start_time: string; end_time: string; duration_minutes: number;
  status: Reservation['status']; can_verify_qr: boolean; activation_reason: string;
- qr_verified_at?: string; activation_status: 'not_started' | 'awaiting_controller';
+ qr_verified_at?: string; activation_status: 'not_started' | 'awaiting_controller' | 'simulated';
 }
 export async function lookupReservationCode(code: string, date: string): Promise<ReservationAccess> {
  const result = await api.post<{ data: ReservationAccess }>('/reservations/lookup', { code, date });
@@ -107,7 +107,7 @@ export async function verifyReservationSlot(code: string, qr: string, date: stri
 }
 export function reservationAccessError(error: unknown): string {
  if (axios.isAxiosError(error)) {
-  if (error.response?.status === 404) return 'No encontramos una reserva con ese código y fecha. Revisá ambos datos.';
+  if (error.response?.status === 404) return 'No encontramos una reserva con ese código para esa fecha.';
   if (error.response?.status === 429) return 'Esperá un minuto antes de intentar nuevamente.';
   if (error.response?.status === 409) return 'Verificá el espacio asignado y el horario de tu turno. La reserva debe estar confirmada.';
   if (error.response?.status === 400) return 'El QR no corresponde a un espacio de Uash.';

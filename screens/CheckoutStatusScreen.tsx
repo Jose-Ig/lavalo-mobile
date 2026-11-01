@@ -181,29 +181,26 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
       requestHome(() => navigation.navigate('Home'));
     }
   }, [homeRequested, busy, requestHome, navigation]);
-  const heading = confirmed ? reservation?.parent_reservation_id ? '¡Tiempo agregado!' : '¡Reserva confirmada!' : canPay ? null : stage === 'loading' ? 'Consultando tu reserva' : stage === 'empty' ? 'Tus reservas' : 'Estado de tu pago';
+  const confirmedReservation = confirmed && !reservation?.parent_reservation_id;
+  const whatsappSent = status?.notification_status === 'whatsapp_sent' || status?.notification_status === 'whatsapp_delivered';
+  const confirmationMessage = `Tu pago fue aprobado y tu turno está confirmado. ${whatsappSent ? 'Tu código de reserva fue enviado por WhatsApp.' : 'El envío de tu código de reserva por WhatsApp está pendiente.'}`;
+  const heading = confirmedReservation ? null : confirmed ? '¡Tiempo agregado!' : canPay ? null : stage === 'loading' ? 'Consultando tu reserva' : stage === 'empty' ? 'Tus reservas' : 'Estado de tu pago';
   return <View style={styles.root}>
     <View style={[styles.header, { paddingTop: insets.top + 12 }]}><Text style={styles.headerTitle}>Pago</Text></View>
     <View style={styles.sheet}><ScrollView contentContainerStyle={styles.scroll}>
       <View style={styles.content}>
         {!!heading && <Text style={styles.title} accessibilityRole="header">{heading}</Text>}
         {!!reservation && <View style={styles.reservationCard}>
-          <Text style={styles.cardTitle}>{reservation.parent_reservation_id ? 'Ampliación de tu reserva' : reservationNumber ? `Reserva ${reservationNumber}` : 'Tu reserva'}</Text>
+          {confirmedReservation ? <Text selectable style={styles.confirmationCode}>Tu código de reserva: {status?.confirmation_code}</Text> : <Text style={styles.cardTitle}>{reservation.parent_reservation_id ? 'Ampliación de tu reserva' : reservationNumber ? `Reserva ${reservationNumber}` : 'Tu reserva'}</Text>}
           <Text style={[styles.text, styles.assignedSpace]}>Tu espacio asignado es el N° {reservation.slot_id}</Text>
           <Text style={styles.text}>{new Date(reservation.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</Text>
           <Text style={styles.text}>{reservation.duration_minutes} minutos</Text>
           {!!status && <Text style={styles.total}>{(status.amount_cents / 100).toLocaleString('es-AR', { style: 'currency', currency: status.currency })}</Text>}
         </View>}
-        {!!status && <View style={[styles.statusCard, confirmed && styles.confirmed]}><Text style={styles.text}>{confirmed && reservation?.parent_reservation_id ? 'Tu pago fue aprobado y el tiempo adicional ya se agregó a tu reserva.' : paymentMessage(status)}</Text></View>}
+        {!!status && <View style={[styles.statusCard, confirmed && styles.confirmed]}><Text style={styles.text}>{confirmedReservation ? confirmationMessage : confirmed && reservation?.parent_reservation_id ? 'Tu pago fue aprobado y el tiempo adicional ya se agregó a tu reserva.' : paymentMessage(status)}</Text></View>}
         {confirmed && !!reservation?.parent_reservation_id && <ActionButton surface="light" label="Volver a mi reserva" onPress={() => navigation.navigate('HaveTurn')} />}
-        {confirmed && !!status?.confirmation_code && <View style={styles.reservationCard}>
-          <Text style={styles.cardTitle}>Tu código de reserva</Text>
-          <Text selectable style={styles.confirmationCode}>{status.confirmation_code}</Text>
-          <Text style={styles.text}>Guardalo para consultar esta reserva y validar el QR de tu espacio desde “Tengo una reserva”. Cada reserva tiene su propio código.</Text>
-          {status.notification_status === 'pending_configuration' && <Text style={styles.text}>El envío de mensajes todavía no está configurado. Por ahora guardá este código.</Text>}
-        </View>}
-        {!!message && <Text accessibilityLiveRegion="polite" style={styles.text}>{message}</Text>}
-        {!!actionError && <Text accessibilityRole="alert" style={styles.error}>{actionError}</Text>}
+        {!confirmedReservation && !!message && <Text accessibilityLiveRegion="polite" style={styles.text}>{message}</Text>}
+        {!confirmedReservation && !!actionError && <Text accessibilityRole="alert" style={styles.error}>{actionError}</Text>}
         {stage === 'loading' && <ActivityIndicator size="large" color={colors.blue} />}
         {canPay && <View style={styles.methodsSection}>
           <Text style={styles.cardTitle}>Medio de pago</Text>

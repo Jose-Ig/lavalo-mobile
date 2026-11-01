@@ -142,14 +142,11 @@ export default function HaveTurnScreen({ navigation }: Props) {
           {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
           <ActionButton surface="light" label={busy ? 'Buscando…' : 'Consultar reserva'} disabled={busy} onPress={() => void lookup()} />
           {reservation && <View style={styles.card} onLayout={({ nativeEvent }) => { detailY.current = nativeEvent.layout.y; revealDetail(); }}>
-            <Text style={styles.label}>{reservation.status === 'confirmed' ? 'Reserva confirmada' : 'Estado de la reserva'}</Text>
-            <Text style={styles.text}>Número de reserva: {reservation.reservation_number}</Text>
             <Text style={styles.text}>{new Date(reservation.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</Text>
             <Text style={[styles.text, styles.important]}>{reservation.duration_minutes} minutos · {formatSpaceLabel(reservation.slot_label)}</Text>
             {!verified && <>
-              <Text style={[styles.text, reservation.can_verify_qr && styles.important]}>{reservation.can_verify_qr ? 'Ya podés escanear el QR de tu espacio.' : reservation.activation_reason === 'too_early' ? 'Podrás validar el QR al comenzar el horario de tu turno.' : reservation.activation_reason === 'expired' ? 'El horario de este turno ya terminó.' : reservation.status === 'cancelled' ? 'Esta reserva está cancelada y no permite activar un espacio.' : 'Esta reserva no está habilitada para activar un espacio.'}</Text>
+              <Text style={styles.text}>{reservation.status === 'cancelled' ? 'Esta reserva está cancelada y no permite activar un espacio.' : reservation.activation_reason === 'expired' ? 'El horario de este turno ya terminó.' : reservation.status === 'confirmed' ? 'Dirigite al lavadero y escaneá el QR de tu espacio asignado cuando sea tu turno.' : 'Esta reserva no está habilitada para activar un espacio.'}</Text>
               <ActionButton surface="light" variant="secondary" label="Editar reserva" accessibilityHint="Cambiar el día o el horario de tu reserva" disabled={!reservation.can_reschedule || busy} onPress={() => navigation.navigate('ChangeTurn')} />
-              {!reservation.can_reschedule && <Text style={styles.hint}>Podés editar el turno de una reserva confirmada sólo antes de su inicio.</Text>}
               {reservation.status === 'confirmed' && <ActionButton surface="light" label="Escanear QR" disabled={busy || reservation.activation_reason === 'expired'} onPress={() => setScanner(true)} />}
             </>}
             {verified && <>
@@ -157,7 +154,7 @@ export default function HaveTurnScreen({ navigation }: Props) {
               <Text accessibilityLabel={`Tiempo restante ${countdown}`} style={styles.countdown}>{countdown}</Text>
               {reservation.status === 'confirmed' && remaining > 0 && !pendingExtension && <ActionButton surface="light" label="Agregar más tiempo" disabled={busy} onPress={() => void openExtension()} />}
               {!!pendingExtension && <ActionButton surface="light" label="Ver pago de tiempo adicional" disabled={busy} onPress={() => navigation.navigate('CheckoutStatus', { reservationId: pendingExtension })} />}
-              {reservation.activation_status === 'awaiting_controller' && remaining > 0 && <Text style={styles.hint}>QR validado. El encendido del equipo todavía requiere configurar la integración con el controlador del espacio.</Text>}
+              {reservation.activation_status === 'simulated' && reservation.status === 'confirmed' && remaining > 0 && <Text style={styles.hint}>Modo de prueba: equipo simulado.</Text>}
             </>}
           </View>}
         </View>
