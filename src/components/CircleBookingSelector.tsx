@@ -218,7 +218,7 @@ const wheelStyles = StyleSheet.create({
 
 export default function CircleBookingSelector({
   initialSelection,
-  defaultDuration = 60,
+  defaultDuration = 15,
   fixedDuration = false,
   onChange,
 }: CircleBookingSelectorProps) {

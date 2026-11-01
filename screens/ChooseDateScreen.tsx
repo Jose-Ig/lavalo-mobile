@@ -53,7 +53,7 @@ export default function ChooseDateScreen({ navigation }: Props) {
           <View style={styles.section}>
             <Text style={styles.sectionTitle} accessibilityRole="header">Elegí tu turno</Text>
             <Text style={styles.description}>Seleccioná el día, la hora y la duración.</Text>
-            <View style={styles.turnPicker}><CircleBookingSelector onChange={setSelection} defaultDuration={60} /></View>
+            <View style={styles.turnPicker}><CircleBookingSelector onChange={setSelection} defaultDuration={15} /></View>
           </View>
 
           <View style={styles.spaceCard}>
