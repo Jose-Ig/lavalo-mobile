@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
+import { useHomeAction } from '../context/HomeActionContext';
 import GlassSurface from './GlassSurface';
 import NavIcon, { type NavIconName } from './NavIcon';
 import { homeTheme as colors } from '../theme/home';
@@ -16,6 +17,7 @@ const INSTAGRAM_URL = 'https://www.instagram.com/jose.ig.prieto';
 export default function BottomBar({ activeRoute = 'Home' }: { activeRoute?: string }) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
+  const { requestHome } = useHomeAction();
   const openExternal = async (url: string, fallback?: string) => {
     try { await Linking.openURL(url); }
     catch {
@@ -24,7 +26,7 @@ export default function BottomBar({ activeRoute = 'Home' }: { activeRoute?: stri
     }
   };
   const items: { icon: NavIconName; label: string; hint: string; active?: boolean; onPress: () => void }[] = [
-    { icon: 'home', label: 'Inicio', hint: 'Ir a la pantalla principal', active: activeRoute === 'Home', onPress: () => navigation.navigate('Home') },
+    { icon: 'home', label: 'Inicio', hint: 'Ir a la pantalla principal', active: activeRoute === 'Home', onPress: () => requestHome(() => navigation.navigate('Home')) },
     { icon: 'pin', label: 'Dónde estamos', hint: 'Abrir la ubicación del lavadero en mapas', onPress: () => { void openExternal(IOS ? 'comgooglemaps://?q=-31.641812,-60.685722' : 'geo:0,0?q=-31.641812,-60.685722', MAPS_URL); } },
     { icon: 'whatsapp', label: 'Dudas', hint: 'Abrir una conversación en WhatsApp', onPress: () => { const text = encodeURIComponent('Hola, tengo un problema y necesito ayuda'); void openExternal(`whatsapp://send?phone=${WHATSAPP_NUMBER}&text=${text}`, `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`); } },
     { icon: 'info', label: 'Nosotros', hint: 'Conocer Uash en Instagram', onPress: () => { void openExternal(INSTAGRAM_URL); } },

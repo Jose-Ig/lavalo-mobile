@@ -21,6 +21,7 @@ import ActiveServiceScreen from './screens/ActiveServiceScreen';
 import ChooseSubscriptionScreen from './screens/ChooseSubscriptionScreen';
 import SubscriptionPaymentScreen from './screens/SubscriptionPaymentScreen';
 import SubscriptionSuccessScreen from './screens/SubscriptionSuccessScreen';
+import { HomeActionProvider } from './src/context/HomeActionContext';
 import BottomBar from './src/components/BottomBar';
 import { ReservationAccessProvider } from './src/context/ReservationAccessContext';
 
@@ -103,6 +104,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ReservationAccessProvider>
+      <HomeActionProvider>
       <NavigationContainer ref={navigationRef} onReady={trackRoute} onStateChange={trackRoute} linking={{
         prefixes: ['uash://'],
         config: { screens: { CheckoutStatus: 'checkout/result' } },
@@ -218,6 +220,7 @@ export default function App() {
           <BottomBar activeRoute={activeRoute} />
         </View>
       </NavigationContainer>
+      </HomeActionProvider>
     </ReservationAccessProvider>
     </SafeAreaProvider>
   );

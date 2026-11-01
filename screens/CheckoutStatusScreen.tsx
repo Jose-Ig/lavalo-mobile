@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as WebBrowser from 'expo-web-browser';
 import type { RootStackParamList } from '../App';
+import { useHomeAction } from '../src/context/HomeActionContext';
 import ActionButton from '../src/components/ActionButton';
 import { apiErrorMessage, cancelReservation, getCheckoutStatus, getReservation, startCheckout, type CheckoutStatus } from '../src/services/api';
 import { clearCheckoutSession, loadCheckoutSession, type CheckoutSession } from '../src/services/checkoutSession';
@@ -30,6 +31,9 @@ function paymentMessage(status: CheckoutStatus): string {
 }
 export default function CheckoutStatusScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
+  const { register: registerHomeAction, requestHome } = useHomeAction();
+  const [homeRequested, setHomeRequested] = useState(false);
+  const confirmationOpen = useRef(false);
   const [session, setSession] = useState<CheckoutSession | null>(null);
   const [status, setStatus] = useState<CheckoutStatus | null>(null);
   const [stage, setStage] = useState<Stage>('loading');
@@ -45,7 +49,7 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; generation.current++; }; }, []);
 
   const refresh = useCallback(async () => {
-    if (lock.current) return;
+    if (lock.current || confirmationOpen.current) return;
     const epoch = generation.current;
     const valid = () => mounted.current && epoch === generation.current;
     lock.current = true; setBusy(true);
@@ -125,27 +129,57 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
     try {
       await cancelReservation(booking.data.id, booking.access_token);
       await clearCheckoutSession(booking.data.id); navigation.replace('Home');
-    } catch (error) { setMessage(apiErrorMessage(error)); }
+    } catch (error) {
+      setActionError(isAxiosError(error) && error.response?.status === 409
+        ? 'La reserva cambió de estado y no se pudo cancelar. Verificá el estado antes de salir.'
+        : 'No pudimos cancelar la reserva. Revisá tu conexión y volvé a intentarlo.');
+    }
     finally { lock.current = false; if (mounted.current) setBusy(false); }
   };
   const confirmCancellation = () => {
     const booking = currentSession.current?.booking;
-    if (!booking || lock.current) return;
+    if (!booking || lock.current || confirmationOpen.current) return;
+    confirmationOpen.current = true;
     const turn = new Date(booking.data.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
     Alert.alert(
       '¿Cancelar esta reserva?',
       `Se liberará tu turno del ${turn}. Esta acción no se puede deshacer.`,
       [
-        { text: 'Conservar reserva', style: 'cancel', isPreferred: true },
-        { text: 'Cancelar reserva', style: 'destructive', onPress: () => void release() },
+        { text: 'Conservar reserva', style: 'cancel', isPreferred: true, onPress: () => { confirmationOpen.current = false; } },
+        { text: 'Cancelar reserva', style: 'destructive', onPress: () => { confirmationOpen.current = false; void release(); } },
       ],
-      { cancelable: true },
+      { cancelable: true, onDismiss: () => { confirmationOpen.current = false; } },
     );
   };
   const confirmed = !!status && status.verified && status.status === 'completed' && status.reservation_status === 'confirmed';
   const canPay = stage === 'ready' || (stage === 'known' && !confirmed && status?.reservation_status === 'pending' && !!status.checkout_url);
   const reservation = session?.booking.data;
   const canCancel = !confirmed && !!reservation && reservation.status === 'pending' && status?.reservation_status !== 'confirmed' && status?.reservation_status !== 'completed' && (stage === 'ready' || (stage === 'known' && status && (!['completed', 'review'].includes(status.status) || status.issue === 'legacy_preferences')));
+  // Bottom-bar Home uses the same cancellation dialog and authenticated DELETE as Cancel reservation.
+  // A paid booking returns Home normally. Unknown/loading state must not abandon a pending hold.
+  useFocusEffect(useCallback(() => registerHomeAction(() => {
+    if (confirmationOpen.current) return;
+    if (lock.current) { setHomeRequested(true); return; }
+    const booking = currentSession.current?.booking;
+    if (confirmed || booking?.data.status === 'confirmed' || booking?.data.status === 'completed' || booking?.data.status === 'cancelled' || stage === 'empty') {
+      navigation.navigate('Home');
+    } else if (booking?.data.status === 'pending') {
+      if (status?.status === 'completed' || status?.status === 'review') {
+        Alert.alert('Estamos verificando tu pago', 'La reserva requiere verificar el pago antes de poder cancelarla.');
+        void refresh();
+      } else {
+        confirmCancellation();
+      }
+    } else {
+      void refresh();
+    }
+  }), [registerHomeAction, confirmed, stage, status, navigation, refresh, confirmCancellation]));
+  useEffect(() => {
+    if (homeRequested && !busy) {
+      setHomeRequested(false);
+      requestHome(() => navigation.navigate('Home'));
+    }
+  }, [homeRequested, busy, requestHome, navigation]);
   const heading = confirmed ? '¡Reserva confirmada!' : canPay ? null : stage === 'loading' ? 'Consultando tu reserva' : stage === 'empty' ? 'Tus reservas' : 'Estado de tu pago';
   return <View style={styles.root}>
     <View style={[styles.header, { paddingTop: insets.top + 12 }]}><Text style={styles.headerTitle}>Pago</Text></View>
