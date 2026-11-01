@@ -82,7 +82,6 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
           </View>
           <View style={styles.actions}>
             <ActionButton surface="light" label="Ir a pagar" onPress={pay} accessibilityHint="Revisá tu reserva antes de realizar el pago" />
-            <Text style={styles.footnote}>Podés revisar el resumen antes de pagar.</Text>
           </View>
         </View>
       </ScrollView>
@@ -112,5 +111,4 @@ const styles = StyleSheet.create({
   hint: { fontSize: 13, lineHeight: 20, color: colors.label },
   error: { color: '#AD2936', fontSize: 13, lineHeight: 20 },
   actions: { alignItems: 'center', gap: 12, paddingTop: 4 },
-  footnote: { color: colors.label, fontSize: 13, lineHeight: 20, textAlign: 'center' },
 });
