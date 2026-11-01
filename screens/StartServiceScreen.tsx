@@ -23,7 +23,17 @@ export default function StartServiceScreen({ navigation }: Props) {
     lock.current = true; setBusy(true); setError('');
     try {
       const current = await lookupReservationCode(access.code, access.reservation.reservation_date); setAccess({ code: access.code, reservation: current });
-      if (!current.can_verify_qr) { setError('El pago debe estar confirmado y tenés que estar dentro del horario de tu turno.'); return; }
+      if (!current.can_verify_qr) {
+        if (current.activation_reason === 'too_early') {
+          const start = new Date(current.start_time);
+          const time = start.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Cordoba', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+          const minutes = Math.max(1, Math.ceil((start.getTime() - Date.now()) / 60000));
+          setError(`El espacio aún no está disponible para tu turno de las ${time}, se liberará en ${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}.`);
+        } else {
+          setError('El pago debe estar confirmado y tenés que estar dentro del horario de tu turno.');
+        }
+        return;
+      }
       const result = permission?.granted ? permission : await requestPermission();
       if (!result.granted) { setError('Necesitamos acceso a la cámara para leer el QR del espacio.'); return; }
       setScanning(true);
