@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
@@ -22,6 +22,15 @@ export default function HaveTurnScreen({ navigation }: Props) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
+  const scroll = useRef<React.ComponentRef<typeof ScrollView> | null>(null);
+  const detailY = useRef<number | null>(null);
+  const revealPending = useRef(false);
+  const revealDetail = () => {
+    if (!revealPending.current || detailY.current === null) return;
+    revealPending.current = false;
+    const y = Math.max(0, detailY.current + 8);
+    requestAnimationFrame(() => scroll.current?.scrollTo({ y, animated: true }));
+  };
   useEffect(() => {
     if (access && reservation && access.reservation.id === reservation.id) {
       setReservation(access.reservation); setCode(access.code);
@@ -36,9 +45,11 @@ export default function HaveTurnScreen({ navigation }: Props) {
     const parsedDate = new Date(Number(year), Number(month) - 1, Number(day), 12);
     if (!/^\d{2}\/\d{2}\/\d{4}$/.test(date) || parsedDate.getFullYear() !== Number(year) || parsedDate.getMonth() !== Number(month) - 1 || parsedDate.getDate() !== Number(day)) { setError('Ingresá la fecha del turno como DD/MM/AAAA.'); return; }
     const dateValue = `${year}-${month}-${day}`;
+    detailY.current = null; revealPending.current = false;
     lock.current = true; setBusy(true); setError(''); setReservation(null); setAccess(null); Keyboard.dismiss();
     try {
       const result = await lookupReservationCode(code, dateValue);
+      revealPending.current = true;
       setReservation(result); setAccess({ code: result.code, reservation: result });
     } catch (error) { setError(reservationAccessError(error)); }
     finally { lock.current = false; setBusy(false); }
@@ -46,7 +57,7 @@ export default function HaveTurnScreen({ navigation }: Props) {
   return <View style={styles.root}>
     <View style={[styles.header, { paddingTop: insets.top + 12 }]}><Text style={styles.headerTitle}>Tengo una reserva</Text></View>
     <KeyboardAvoidingView style={styles.sheet} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scroll} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" onContentSizeChange={revealDetail}>
         <View style={styles.content}>
           <View style={styles.section}><Text style={styles.title} accessibilityRole="header">Buscá tu reserva</Text><Text style={styles.text}>Ingresá el código y la fecha de tu turno. Podés consultar cualquier reserva, desde cualquier dispositivo.</Text></View>
           <View style={styles.section}><Text style={styles.label}>Código de reserva</Text>
@@ -61,7 +72,7 @@ export default function HaveTurnScreen({ navigation }: Props) {
           </View>
           {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
           <ActionButton surface="light" label={busy ? 'Buscando…' : 'Consultar reserva'} disabled={busy} onPress={() => void lookup()} />
-          {reservation && <View style={styles.card}>
+          {reservation && <View style={styles.card} onLayout={({ nativeEvent }) => { detailY.current = nativeEvent.layout.y; revealDetail(); }}>
             <Text style={styles.label}>{reservation.status === 'confirmed' ? 'Reserva confirmada' : 'Estado de la reserva'}</Text>
             <Text style={styles.text}>Reserva {reservation.reservation_number}</Text>
             <Text selectable style={styles.code}>{reservation.code}</Text>
