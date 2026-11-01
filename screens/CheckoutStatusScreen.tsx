@@ -142,8 +142,8 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
     confirmationOpen.current = true;
     const turn = new Date(booking.data.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
     Alert.alert(
-      '¿Cancelar esta reserva?',
-      `Se liberará tu turno del ${turn}. Esta acción no se puede deshacer.`,
+      booking.data.parent_reservation_id ? '¿Cancelar el tiempo adicional?' : '¿Cancelar esta reserva?',
+      booking.data.parent_reservation_id ? `Se liberará el tiempo adicional del ${turn}. Tu reserva original se conserva.` : `Se liberará tu turno del ${turn}. Esta acción no se puede deshacer.`,
       [
         { text: 'Conservar reserva', style: 'cancel', isPreferred: true, onPress: () => { confirmationOpen.current = false; } },
         { text: 'Cancelar reserva', style: 'destructive', onPress: () => { confirmationOpen.current = false; void release(); } },
@@ -180,20 +180,21 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
       requestHome(() => navigation.navigate('Home'));
     }
   }, [homeRequested, busy, requestHome, navigation]);
-  const heading = confirmed ? '¡Reserva confirmada!' : canPay ? null : stage === 'loading' ? 'Consultando tu reserva' : stage === 'empty' ? 'Tus reservas' : 'Estado de tu pago';
+  const heading = confirmed ? reservation?.parent_reservation_id ? '¡Tiempo agregado!' : '¡Reserva confirmada!' : canPay ? null : stage === 'loading' ? 'Consultando tu reserva' : stage === 'empty' ? 'Tus reservas' : 'Estado de tu pago';
   return <View style={styles.root}>
     <View style={[styles.header, { paddingTop: insets.top + 12 }]}><Text style={styles.headerTitle}>Pago</Text></View>
     <View style={styles.sheet}><ScrollView contentContainerStyle={styles.scroll}>
       <View style={styles.content}>
         {!!heading && <Text style={styles.title} accessibilityRole="header">{heading}</Text>}
         {!!reservation && <View style={styles.reservationCard}>
-          <Text style={styles.cardTitle}>Reserva {reservation.reservation_number}</Text>
-          <Text style={styles.text}>Espacio asignado: {reservation.slot_id}</Text>
+          <Text style={styles.cardTitle}>{reservation.parent_reservation_id ? 'Ampliación de tu reserva' : `Reserva ${reservation.reservation_number}`}</Text>
+          <Text style={[styles.text, confirmed && { fontWeight: '700' }]}>{confirmed ? `Tu espacio asignado es el N° ${reservation.slot_id}` : `Espacio asignado: ${reservation.slot_id}`}</Text>
           <Text style={styles.text}>{new Date(reservation.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</Text>
           <Text style={styles.text}>{reservation.duration_minutes} minutos</Text>
           {!!status && <Text style={styles.total}>{(status.amount_cents / 100).toLocaleString('es-AR', { style: 'currency', currency: status.currency })}</Text>}
         </View>}
-        {!!status && <View style={[styles.statusCard, confirmed && styles.confirmed]}><Text style={styles.text}>{paymentMessage(status)}</Text></View>}
+        {!!status && <View style={[styles.statusCard, confirmed && styles.confirmed]}><Text style={styles.text}>{confirmed && reservation?.parent_reservation_id ? 'Tu pago fue aprobado y el tiempo adicional ya se agregó a tu reserva.' : paymentMessage(status)}</Text></View>}
+        {confirmed && !!reservation?.parent_reservation_id && <ActionButton surface="light" label="Volver a mi reserva" onPress={() => navigation.navigate('HaveTurn')} />}
         {confirmed && !!status?.confirmation_code && <View style={styles.reservationCard}>
           <Text style={styles.cardTitle}>Tu código de reserva</Text>
           <Text selectable style={styles.confirmationCode}>{status.confirmation_code}</Text>

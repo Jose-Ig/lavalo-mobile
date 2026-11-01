@@ -10,6 +10,7 @@ const api = axios.create({
 export interface Slot { id: number; label: string; is_available: boolean }
 export interface Reservation {
   reservation_number: string;
+  parent_reservation_id?: number;
   id: number;
   email?: string;
   whatsapp_opt_in?: boolean;
@@ -128,4 +129,18 @@ export function rescheduleError(error: unknown): string {
   if (error.response?.status === 400) return 'Elegí un horario futuro dentro de 09:00 a 21:00 y los próximos 8 días.';
  }
  return reservationAccessError(error);
+}
+
+export interface ExtensionOption { minutes: number; amount_cents: number }
+export async function getExtensionOptions(code: string, date: string): Promise<ExtensionOption[]> {
+ const response = await api.post<{ data: ExtensionOption[] }>('/reservations/extensions/availability', { code, date });
+ return response.data.data;
+}
+export async function createExtension(code: string, date: string, minutes: number): Promise<BookingResponse> {
+ const response = await api.post<BookingResponse>('/reservations/extensions', { code, date, minutes });
+ return response.data;
+}
+export function extensionError(error: unknown): string {
+ if (axios.isAxiosError(error) && error.response?.status === 409) return 'No hay disponibilidad o el turno ya terminó. Consultá nuevamente la reserva.';
+ return apiErrorMessage(error);
 }

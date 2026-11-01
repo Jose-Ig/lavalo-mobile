@@ -7,5 +7,4 @@ export { default as SuccessScreen } from './SuccessScreen';
 export { default as ErrorScreen } from './ErrorScreen';
 export { default as HaveTurnScreen } from './HaveTurnScreen';
 export { default as ChangeTurnScreen } from './ChangeTurnScreen';
-export { default as StartServiceScreen } from './StartServiceScreen';
 

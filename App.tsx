@@ -15,7 +15,6 @@ import SuccessScreen from './screens/SuccessScreen';
 import ErrorScreen from './screens/ErrorScreen';
 import HaveTurnScreen from './screens/HaveTurnScreen';
 import ChangeTurnScreen from './screens/ChangeTurnScreen';
-import StartServiceScreen from './screens/StartServiceScreen';
 import VerifyTurnScreen from './screens/VerifyTurnScreen';
 import ActiveServiceScreen from './screens/ActiveServiceScreen';
 import ChooseSubscriptionScreen from './screens/ChooseSubscriptionScreen';
@@ -87,7 +86,6 @@ export type RootStackParamList = {
   Error: undefined;
   HaveTurn: undefined;
   ChangeTurn: undefined;
-  StartService: undefined;
   VerifyTurn: undefined;
   ActiveService: undefined;
   ChooseSubscription: undefined;
@@ -184,11 +182,6 @@ export default function App() {
             <Stack.Screen
               name="ChangeTurn"
               component={ChangeTurnScreen}
-              options={{ headerShown: false, animation: 'slide_from_bottom' }}
-            />
-            <Stack.Screen
-              name="StartService"
-              component={StartServiceScreen}
               options={{ headerShown: false, animation: 'slide_from_bottom' }}
             />
             <Stack.Screen
