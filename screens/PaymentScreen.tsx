@@ -63,7 +63,7 @@ export default function PaymentScreen({ navigation, route }: Props) {
             <Text style={styles.total}>{total.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })}<Text style={styles.currency}> ARS</Text></Text>
           </View>
           <View style={styles.actions}>
-            {pending && <Text style={styles.pending} accessibilityLiveRegion="polite">Reserva {pending.data.reservation_number} pendiente.{pending.data.expires_at ? ` Vence a las ${new Date(pending.data.expires_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}.` : ''} Se confirma después de verificar el pago.</Text>}
+            {pending && <Text style={styles.pending} accessibilityLiveRegion="polite">{pending.data.reservation_number ? `Reserva ${pending.data.reservation_number} pendiente.` : 'Reserva pendiente.'}{pending.data.expires_at ? ` Vence a las ${new Date(pending.data.expires_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}.` : ''} Se confirma después de verificar el pago.</Text>}
             <ActionButton surface="light" label={saving ? 'Preparando reserva…' : pending ? 'Continuar con mi reserva' : 'Continuar al pago'} disabled={saving} onPress={() => void reserve()} accessibilityHint="Continuá para preparar el checkout de Mercado Pago" />
           </View>
         </View>

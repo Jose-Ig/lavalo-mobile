@@ -1,3 +1,4 @@
+import { formatSpaceLabel } from '../services/reservationDisplay';
 import type { ViewInstance } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -26,10 +27,10 @@ export default function SpaceDropdown({ slots, value, onChange }: Props) {
   };
   return <>
     <View ref={anchor} collapsable={false}>
-      <Pressable accessibilityRole="combobox" accessibilityLabel="Elegí tu espacio" accessibilityValue={{ text: selected?.label || 'Seleccioná un espacio' }}
+      <Pressable accessibilityRole="combobox" accessibilityLabel="Elegí tu espacio" accessibilityValue={{ text: selected ? formatSpaceLabel(selected.label) : 'Seleccioná un espacio' }}
         accessibilityState={{ expanded: !!menu }} onPress={open}
         android_ripple={{ color: '#D9E6FF' }} style={({ pressed }) => [styles.field, pressed && styles.pressed]}>
-        <Text style={styles.value}>{selected?.label || 'Seleccioná un espacio'}</Text>
+        <Text style={styles.value}>{selected ? formatSpaceLabel(selected.label) : 'Seleccioná un espacio'}</Text>
         <View style={styles.chevron} accessible={false} pointerEvents="none">
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none"><Path d="m6 9 6 6 6-6" stroke={colors.blue} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
         </View>
@@ -45,7 +46,7 @@ export default function SpaceDropdown({ slots, value, onChange }: Props) {
             renderItem={({ item }) => <Pressable accessibilityRole="radio" accessibilityState={{ checked: item.id === value }}
               onPress={() => { onChange(item.id); setMenu(null); }} android_ripple={{ color: '#D9E6FF' }}
               style={({ pressed }) => [styles.option, item.id === value && styles.selected, pressed && styles.pressed]}>
-              <Text style={[styles.optionLabel, item.id === value && styles.selectedLabel]}>{item.label}</Text>
+              <Text style={[styles.optionLabel, item.id === value && styles.selectedLabel]}>{formatSpaceLabel(item.label)}</Text>
             </Pressable>} />
         </View>}
       </View>

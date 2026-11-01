@@ -1,3 +1,4 @@
+import { formatSpaceLabel } from '../src/services/reservationDisplay';
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { AppState, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -132,7 +133,7 @@ export default function HaveTurnScreen({ navigation }: Props) {
         <View style={styles.content}>
           <View style={styles.section}><Text style={styles.title} accessibilityRole="header">Buscá tu reserva</Text><Text style={styles.text}>Ingresá el código y la fecha de tu turno.</Text></View>
           <View style={styles.section}><Text style={styles.label}>Código de reserva</Text>
-            <TextInput accessibilityLabel="Código de reserva" value={code} editable={!busy} autoCapitalize="characters" autoCorrect={false} maxLength={40} placeholder="123456-ddmmaa" placeholderTextColor="#687991" style={styles.input}
+            <TextInput accessibilityLabel="Código de reserva" value={code} editable={!busy} autoCapitalize="characters" autoCorrect={false} maxLength={40} placeholder="123456" placeholderTextColor="#687991" style={styles.input}
               onChangeText={text => { setCode(text.toUpperCase()); setError(''); setReservation(null); setAccess(null); }} returnKeyType="search" onSubmitEditing={() => void lookup()} />
           </View>
           <View style={styles.section}><Text style={styles.label}>Fecha del turno</Text>
@@ -144,7 +145,7 @@ export default function HaveTurnScreen({ navigation }: Props) {
             <Text style={styles.label}>{reservation.status === 'confirmed' ? 'Reserva confirmada' : 'Estado de la reserva'}</Text>
             <Text style={styles.text}>Número de reserva: {reservation.reservation_number}</Text>
             <Text style={styles.text}>{new Date(reservation.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</Text>
-            <Text style={[styles.text, styles.important]}>{reservation.duration_minutes} minutos · {reservation.slot_label}</Text>
+            <Text style={[styles.text, styles.important]}>{reservation.duration_minutes} minutos · {formatSpaceLabel(reservation.slot_label)}</Text>
             {!verified && <>
               <Text style={[styles.text, reservation.can_verify_qr && styles.important]}>{reservation.can_verify_qr ? 'Ya podés escanear el QR de tu espacio.' : reservation.activation_reason === 'too_early' ? 'Podrás validar el QR al comenzar el horario de tu turno.' : reservation.activation_reason === 'expired' ? 'El horario de este turno ya terminó.' : reservation.status === 'cancelled' ? 'Esta reserva está cancelada y no permite activar un espacio.' : 'Esta reserva no está habilitada para activar un espacio.'}</Text>
               <ActionButton surface="light" variant="secondary" label="Editar reserva" accessibilityHint="Cambiar el día o el horario de tu reserva" disabled={!reservation.can_reschedule || busy} onPress={() => navigation.navigate('ChangeTurn')} />

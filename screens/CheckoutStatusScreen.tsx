@@ -154,6 +154,7 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
   const confirmed = !!status && status.verified && status.status === 'completed' && status.reservation_status === 'confirmed';
   const canPay = stage === 'ready' || (stage === 'known' && !confirmed && status?.reservation_status === 'pending' && !!status.checkout_url);
   const reservation = session?.booking.data;
+  const reservationNumber = status?.reservation_number || reservation?.reservation_number;
   const canCancel = !confirmed && !!reservation && reservation.status === 'pending' && status?.reservation_status !== 'confirmed' && status?.reservation_status !== 'completed' && (stage === 'ready' || (stage === 'known' && status && (!['completed', 'review'].includes(status.status) || status.issue === 'legacy_preferences')));
   // Bottom-bar Home uses the same cancellation dialog and authenticated DELETE as Cancel reservation.
   // A paid booking returns Home normally. Unknown/loading state must not abandon a pending hold.
@@ -187,8 +188,8 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
       <View style={styles.content}>
         {!!heading && <Text style={styles.title} accessibilityRole="header">{heading}</Text>}
         {!!reservation && <View style={styles.reservationCard}>
-          <Text style={styles.cardTitle}>{reservation.parent_reservation_id ? 'Ampliación de tu reserva' : `Reserva ${reservation.reservation_number}`}</Text>
-          <Text style={[styles.text, confirmed && { fontWeight: '700' }]}>{confirmed ? `Tu espacio asignado es el N° ${reservation.slot_id}` : `Espacio asignado: ${reservation.slot_id}`}</Text>
+          <Text style={styles.cardTitle}>{reservation.parent_reservation_id ? 'Ampliación de tu reserva' : reservationNumber ? `Reserva ${reservationNumber}` : 'Tu reserva'}</Text>
+          <Text style={[styles.text, styles.assignedSpace]}>Tu espacio asignado es el N° {reservation.slot_id}</Text>
           <Text style={styles.text}>{new Date(reservation.start_time).toLocaleString('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</Text>
           <Text style={styles.text}>{reservation.duration_minutes} minutos</Text>
           {!!status && <Text style={styles.total}>{(status.amount_cents / 100).toLocaleString('es-AR', { style: 'currency', currency: status.currency })}</Text>}
@@ -233,6 +234,7 @@ const styles = StyleSheet.create({
   reservationCard: { padding: 20, borderRadius: 24, backgroundColor: '#EFF4FC', gap: 8 },
   cardTitle: { color: colors.ink, fontSize: 18, lineHeight: 26, fontWeight: '700' },
   text: { color: colors.label, fontSize: 16, lineHeight: 24 },
+  assignedSpace: { fontWeight: '700' },
   confirmationCode: { color: colors.ink, fontSize: 18, lineHeight: 28, fontWeight: '700', letterSpacing: 1 },
   total: { color: colors.ink, fontSize: 28, lineHeight: 36, fontWeight: '700', marginTop: 4 },
   statusCard: { padding: 20, borderRadius: 20, backgroundColor: '#F1F4F8' },
