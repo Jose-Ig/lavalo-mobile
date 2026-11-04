@@ -41,12 +41,12 @@ const generateDays = (): { label: string; value: string; isToday: boolean }[] =>
   return days;
 };
 
-// Generar todos los horarios desde 8:00 hasta 22:00 en intervalos de 30 min
+// Generar horarios desde 09:00 hasta 21:00 en intervalos de 5 minutos.
 const generateAllHours = (): { label: string; value: string; minutes: number }[] => {
   const hours: { label: string; value: string; minutes: number }[] = [];
   for (let h = 9; h <= 21; h++) {
     const hour = h.toString().padStart(2, '0');
-    const slots = h < 21 ? [0, 15, 30, 45] : [0];
+    const slots = h < 21 ? Array.from({ length: 12 }, (_, index) => index * 5) : [0];
     for (const min of slots) {
       const minute = min.toString().padStart(2, '0');
       hours.push({
@@ -67,6 +67,7 @@ const getCurrentMinutes = (): number => {
 
 // Duraciones disponibles
 const DURATIONS = [
+  { label: '3', value: 3 },
   { label: '15', value: 15 },
   { label: '30', value: 30 },
   { label: '60', value: 60 },
@@ -218,7 +219,7 @@ const wheelStyles = StyleSheet.create({
 
 export default function CircleBookingSelector({
   initialSelection,
-  defaultDuration = 15,
+  defaultDuration = 3,
   fixedDuration = false,
   onChange,
 }: CircleBookingSelectorProps) {

@@ -115,3 +115,7 @@ Las etiquetas numéricas de espacios se muestran como `Espacio N° n`, incluso c
 El escaneo sigue validando código, fecha, pago confirmado, espacio habilitado y horario `[inicio, fin)`. Solo después registra el check-in y devuelve `simulated`, también en consultas posteriores. La cuenta regresiva usa `end_time` del servidor; volver a escanear no reinicia el tiempo. Se oculta Editar reserva y se habilita Agregar más tiempo durante el turno vigente.
 
 La disponibilidad y los pagos adicionales siguen usando el flujo real de reservas y Mercado Pago. Solo la respuesta del Arduino se simula: no se aprueban pagos automáticamente, no se agregan minutos gratis y no se modifica el horario original al escanear. Al confirmarse un pago adicional se actualiza el fin de la reserva y la app refresca la cuenta regresiva.
+
+## Turnos cortos para pruebas del controlador
+
+Se agrega duración de 3 minutos, seleccionada por defecto en nuevas reservas, y horarios de inicio cada 5 minutos (09:00, 09:05, 09:10, etc.). Se mantienen también 15, 30 y 60 minutos y el cierre de las 21:00. Los 3 minutos cuestan ARS 250 (25000 centavos), de acuerdo con la tarifa proporcional vigente. La ampliación también admite 3 minutos, sujeta a disponibilidad y pago confirmado. La retención pendiente sigue limitada por el inicio del turno. No se cambia el margen de anticipación del selector.
