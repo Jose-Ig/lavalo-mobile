@@ -54,7 +54,7 @@ export function apiErrorMessage(error: unknown): string {
     if (error.response?.status === 503) return 'No pudimos verificar el pago. Consultá nuevamente antes de pagar otra vez.';
     if (error.response?.status === 404) return 'No encontramos la reserva o todavía no se preparó su checkout.';
     if (error.response?.status === 409) return 'Ese espacio ya no está disponible. Elegí otro turno.';
-    if (error.response?.status === 400) return 'Revisá los datos y elegí un horario futuro dentro de 09:00 a 21:00.';
+    if (error.response?.status === 400) return 'Revisá los datos y elegí un horario futuro dentro de 09:00 a 23:59.';
     if (!error.response) return 'No pudimos conectar con Uash. Revisá tu conexión e intentá nuevamente.';
   }
   return 'No pudimos completar la operación. Intentá nuevamente.';
@@ -126,7 +126,7 @@ export async function rescheduleReservation(code: string, date: string, selectio
 export function rescheduleError(error: unknown): string {
  if (axios.isAxiosError(error)) {
   if (error.response?.status === 409) return 'El turno ya no está disponible o la reserva ya comenzó o fue validada. Consultá nuevamente la reserva y elegí otro turno.';
-  if (error.response?.status === 400) return 'Elegí un horario futuro dentro de 09:00 a 21:00 y los próximos 8 días.';
+  if (error.response?.status === 400) return 'Elegí un horario futuro dentro de 09:00 a 23:59 y los próximos 8 días.';
  }
  return reservationAccessError(error);
 }

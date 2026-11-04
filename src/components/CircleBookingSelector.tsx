@@ -41,12 +41,12 @@ const generateDays = (): { label: string; value: string; isToday: boolean }[] =>
   return days;
 };
 
-// Generar horarios desde 09:00 hasta 21:00 en intervalos de 5 minutos.
+// Generar horarios desde 09:00 hasta 23:55 en intervalos de 5 minutos.
 const generateAllHours = (): { label: string; value: string; minutes: number }[] => {
   const hours: { label: string; value: string; minutes: number }[] = [];
-  for (let h = 9; h <= 21; h++) {
+  for (let h = 9; h < 24; h++) {
     const hour = h.toString().padStart(2, '0');
-    const slots = h < 21 ? Array.from({ length: 12 }, (_, index) => index * 5) : [0];
+    const slots = Array.from({ length: 12 }, (_, index) => index * 5);
     for (const min of slots) {
       const minute = min.toString().padStart(2, '0');
       hours.push({
@@ -227,7 +227,7 @@ export default function CircleBookingSelector({
   const [hourIndex, setHourIndex] = useState(() => {
     if (!initialSelection) return 0;
     const day = DAYS.find(day => day.value === initialSelection.date) || DAYS[0];
-    const hours = ALL_HOURS.filter(hour => hour.minutes + initialSelection.duration <= 21 * 60 && (!day.isToday || hour.minutes >= getCurrentMinutes() + 30));
+    const hours = ALL_HOURS.filter(hour => hour.minutes + initialSelection.duration <= 23 * 60 + 59 && (!day.isToday || hour.minutes >= getCurrentMinutes() + 30));
     return Math.max(0, hours.findIndex(hour => hour.value === initialSelection.time));
   });
   const [durationIndex, setDurationIndex] = useState(
@@ -244,7 +244,7 @@ export default function CircleBookingSelector({
     
     if (!isToday) {
       // Si no es hoy, todos los horarios están disponibles
-      return ALL_HOURS.filter(hour => hour.minutes + DURATIONS[durationIndex].value <= 21 * 60);
+      return ALL_HOURS.filter(hour => hour.minutes + DURATIONS[durationIndex].value <= 23 * 60 + 59);
     }
     
     // Si es hoy, filtrar horarios pasados
@@ -252,7 +252,7 @@ export default function CircleBookingSelector({
     // Agregar 30 minutos de margen para dar tiempo a llegar
     const minMinutes = currentMinutes + 30;
     
-    return ALL_HOURS.filter(hour => hour.minutes >= minMinutes && hour.minutes + DURATIONS[durationIndex].value <= 21 * 60);
+    return ALL_HOURS.filter(hour => hour.minutes >= minMinutes && hour.minutes + DURATIONS[durationIndex].value <= 23 * 60 + 59);
   }, [dayIndex, durationIndex]);
 
   // Ajustar hourIndex cuando cambian los horarios disponibles
