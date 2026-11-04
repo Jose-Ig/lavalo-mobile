@@ -95,7 +95,7 @@ export interface ReservationAccess {
  id: number; code: string; slot_id: number; slot_label: string;
  start_time: string; end_time: string; duration_minutes: number;
  status: Reservation['status']; can_verify_qr: boolean; activation_reason: string;
- qr_verified_at?: string; activation_status: 'not_started' | 'awaiting_controller' | 'simulated';
+ qr_verified_at?: string; activation_status: 'not_started' | 'awaiting_controller' | 'simulated' | 'active' | 'controller_offline' | 'controller_unavailable' | 'controller_unknown' | 'ended';
 }
 export async function lookupReservationCode(code: string, date: string): Promise<ReservationAccess> {
  const result = await api.post<{ data: ReservationAccess }>('/reservations/lookup', { code, date });

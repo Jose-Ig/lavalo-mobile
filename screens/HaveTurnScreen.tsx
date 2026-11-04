@@ -20,6 +20,9 @@ export default function HaveTurnScreen({ navigation }: Props) {
   const [code, setCode] = useState('');
   const [reservation, setReservation] = useState<ReservationAccess | null>(null);
   const [pendingExtension, setPendingExtension] = useState<number | null>(null);
+  const pendingExtensionRef = useRef(pendingExtension);
+  pendingExtensionRef.current = pendingExtension;
+  const lastPaymentSync = useRef(0);
   const [calendar, setCalendar] = useState(false);
   const [scanner, setScanner] = useState(false);
   const [extension, setExtension] = useState(false);
@@ -41,30 +44,42 @@ export default function HaveTurnScreen({ navigation }: Props) {
   currentAccess.current = access;
   useFocusEffect(useCallback(() => {
     let active = true;
+    let refreshing = false;
     const refresh = async () => {
       const saved = currentAccess.current;
-      if (!saved || lock.current) return;
+      if (!saved || lock.current || refreshing) return;
+      refreshing = true;
       try {
         // Only inspect the current checkout when it belongs to this explicitly looked-up reservation.
-        const checkout = await loadCheckoutSession();
-        let pending: number | null = null;
-        if (checkout?.booking.data.parent_reservation_id === saved.reservation.id) {
-          const child = await getReservation(checkout.booking.data.id, checkout.booking.access_token);
-          if (child.status !== 'cancelled') {
-            try {
-              const status = await getCheckoutStatus(child.id, checkout.booking.access_token);
-              if (['review', 'refunded'].includes(status.status) || (child.status === 'pending' && !['expired', 'completed'].includes(status.status))) pending = child.id;
-            } catch { pending = child.id; }
+        let pending = pendingExtensionRef.current;
+        if (Date.now() - lastPaymentSync.current >= 15000) {
+          lastPaymentSync.current = Date.now();
+          const checkout = await loadCheckoutSession();
+          pending = null;
+          if (checkout?.booking.data.parent_reservation_id === saved.reservation.id) {
+            const child = await getReservation(checkout.booking.data.id, checkout.booking.access_token);
+            if (child.status === 'pending') {
+              try {
+                const status = await getCheckoutStatus(child.id, checkout.booking.access_token);
+                if (['review', 'refunded'].includes(status.status) || !['expired', 'completed'].includes(status.status)) pending = child.id;
+              } catch { pending = child.id; }
+            }
           }
         }
         const result = await lookupReservationCode(saved.code, saved.reservation.reservation_date);
         if (active && currentAccess.current?.reservation.id === result.id) {
           setAccess({ code: result.code, reservation: result }); setPendingExtension(pending);
         }
-      } catch { /* Keep the current detail; explicit lookup still reports errors. */ }
+      } catch {
+        const latest = currentAccess.current;
+        if (active && latest?.reservation.id === saved.reservation.id && latest.reservation.qr_verified_at && !['simulated', 'not_started'].includes(latest.reservation.activation_status)) {
+          setAccess({ ...latest, reservation: { ...latest.reservation, activation_status: 'controller_unknown' } });
+        }
+      }
+      finally { refreshing = false; }
     };
     void refresh();
-    const timer = setInterval(() => { setNow(Date.now()); if (AppState.currentState === 'active') void refresh(); }, 10000);
+    const timer = setInterval(() => { setNow(Date.now()); if (AppState.currentState === 'active') void refresh(); }, 3000);
     const app = AppState.addEventListener('change', state => { if (state === 'active') { setNow(Date.now()); void refresh(); } });
     return () => { active = false; clearInterval(timer); app.remove(); };
   }, [setAccess]));
@@ -103,6 +118,7 @@ export default function HaveTurnScreen({ navigation }: Props) {
     finally { lock.current = false; setBusy(false); }
   };
   const verified = !!reservation?.qr_verified_at;
+  const serviceRunning = verified && (reservation?.activation_status === 'active' || reservation?.activation_status === 'simulated');
   const remaining = reservation?.status === 'confirmed' ? Math.max(0, Math.ceil((Date.parse(reservation.end_time) - now) / 1000)) : 0;
   const countdown = `${String(Math.floor(remaining / 3600)).padStart(2, '0')}:${String(Math.floor((remaining % 3600) / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
   const openExtension = async () => {
@@ -150,9 +166,11 @@ export default function HaveTurnScreen({ navigation }: Props) {
               {reservation.status === 'confirmed' && <ActionButton surface="light" label="Escanear QR" disabled={busy || reservation.activation_reason === 'expired'} onPress={() => setScanner(true)} />}
             </>}
             {verified && <>
-              <Text style={styles.label}>{remaining > 0 && reservation.status === 'confirmed' ? 'Tiempo restante' : 'Turno finalizado'}</Text>
-              <Text accessibilityLabel={`Tiempo restante ${countdown}`} style={styles.countdown}>{countdown}</Text>
-              {reservation.status === 'confirmed' && remaining > 0 && !pendingExtension && <ActionButton surface="light" label="Agregar más tiempo" disabled={busy} onPress={() => void openExtension()} />}
+              {remaining > 0 && reservation.status === 'confirmed' && !serviceRunning ? <Text accessibilityLiveRegion="polite" style={styles.text}>{reservation.activation_status === 'controller_unknown' ? 'No podemos confirmar el estado del equipo. Revisá tu conexión.' : reservation.activation_status === 'controller_offline' ? 'El dispositivo está sin conexión. No podemos confirmar el estado del equipo.' : reservation.activation_status === 'controller_unavailable' ? 'El dispositivo no está disponible. Contactanos para recibir ayuda.' : 'Activando tu espacio…'}</Text> : <>
+                <Text style={styles.label}>{remaining > 0 && reservation.status === 'confirmed' ? 'Tiempo restante' : 'Turno finalizado'}</Text>
+                <Text accessibilityLabel={`Tiempo restante ${countdown}`} style={styles.countdown}>{countdown}</Text>
+              </>}
+              {reservation.status === 'confirmed' && remaining > 0 && serviceRunning && !pendingExtension && <ActionButton surface="light" label="Agregar más tiempo" disabled={busy} onPress={() => void openExtension()} />}
               {!!pendingExtension && <ActionButton surface="light" label="Ver pago de tiempo adicional" disabled={busy} onPress={() => navigation.navigate('CheckoutStatus', { reservationId: pendingExtension })} />}
               {reservation.activation_status === 'simulated' && reservation.status === 'confirmed' && remaining > 0 && <Text style={styles.hint}>Modo de prueba: equipo simulado.</Text>}
             </>}
