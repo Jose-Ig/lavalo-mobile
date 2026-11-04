@@ -54,6 +54,7 @@ export default function ChooseDateScreen({ navigation }: Props) {
             <Text style={styles.sectionTitle} accessibilityRole="header">Elegí tu turno</Text>
             <Text style={styles.description}>Seleccioná el día, la hora y la duración.</Text>
             <View style={styles.turnPicker}><CircleBookingSelector onChange={setSelection} defaultDuration={3} /></View>
+            {!!selection && <Text accessibilityLiveRegion="polite" style={styles.price}>Precio: {(selection.duration / 60 * 5000).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })} ARS</Text>}
           </View>
 
           <View style={styles.spaceCard}>
@@ -89,6 +90,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 20, lineHeight: 28, fontWeight: '700', color: colors.ink },
   description: { fontSize: 15, lineHeight: 22, color: colors.label },
   turnPicker: { marginTop: 12 },
+  price: { color: colors.ink, fontSize: 24, lineHeight: 32, fontWeight: '700', textAlign: 'center', marginTop: 12 },
   spaceCard: { backgroundColor: '#F0F4FC', borderRadius: 24, borderWidth: 1, borderColor: '#E0E8F7', padding: 20, gap: 20 },
   status: { flexDirection: 'row', gap: 12, alignItems: 'center', paddingVertical: 8 },
   statusText: { flexShrink: 1, fontSize: 15, lineHeight: 23, color: colors.label },
