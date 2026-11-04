@@ -73,17 +73,14 @@ export default function ReservationEditor({ section, value, onSave, onClose }: P
               <TextInput ref={lastNameRef} accessibilityLabel="Apellido" style={[styles.input, submitted && !!errors.lastName && styles.invalid]} value={apellido} onChangeText={setApellido} maxLength={100} autoComplete="family-name" textContentType="familyName" autoCapitalize="words" returnKeyType="next" onSubmitEditing={() => areaRef.current?.focus()} />
               {submitted && !!errors.lastName && <Text style={styles.error}>{errors.lastName}</Text>}
             </View>
-            <View style={styles.field}><Text style={styles.label}>Código de área</Text>
-              <TextInput ref={areaRef} accessibilityLabel="Código de área sin cero" placeholder="351" style={[styles.input, submitted && !!errors.area && styles.invalid]} value={codigoArea} onChangeText={text => setCodigoArea(text.replace(/\D/g, ''))} maxLength={4} keyboardType="phone-pad" returnKeyType="next" onSubmitEditing={() => phoneRef.current?.focus()} />
-              <Text style={styles.hint}>Sin el 0 inicial. Por ejemplo: 11, 351 o 2954.</Text>
-              {submitted && !!errors.area && <Text style={styles.error}>{errors.area}</Text>}
-            </View>
             <View style={styles.field}><Text style={styles.label}>Teléfono celular</Text>
-              <View style={[styles.phone, submitted && !!errors.phone && styles.invalid]}><Text style={styles.label}>+54 {codigoArea}</Text>
+              <View style={[styles.phone, submitted && (!!errors.phone || !!errors.area) && styles.invalid]}><Text style={styles.label}>+54</Text>
+                <TextInput ref={areaRef} accessibilityLabel="Código de área sin cero" placeholder="351" style={styles.areaInput} value={codigoArea} onChangeText={text => setCodigoArea(text.replace(/\D/g, ''))} maxLength={4} keyboardType="phone-pad" returnKeyType="next" onSubmitEditing={() => phoneRef.current?.focus()} />
                 <TextInput ref={phoneRef} accessibilityLabel="Número de celular sin código de área ni 15" style={styles.phoneInput} value={phone} keyboardType="phone-pad" autoComplete="off" maxLength={8} returnKeyType="next" onSubmitEditing={() => emailRef.current?.focus()}
                   onChangeText={text => setPhone(text.replace(/\D/g, ''))} />
               </View>
-              <Text style={styles.hint}>Número local, sin el 15.</Text>
+              <Text style={styles.hint}>Código de área + número, sin 0 ni 15.</Text>
+              {submitted && !!errors.area && <Text style={styles.error}>{errors.area}</Text>}
               {submitted && !!errors.phone && <Text style={styles.error}>{errors.phone}</Text>}
             </View>
             <Text style={styles.hint}>Enviaremos por WhatsApp tu código de confirmación de turno.</Text>
@@ -91,7 +88,7 @@ export default function ReservationEditor({ section, value, onSave, onClose }: P
               <TextInput ref={emailRef} accessibilityLabel="Email" style={[styles.input, submitted && !!errors.email && styles.invalid]}
                 value={email} onChangeText={setEmail} maxLength={254} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
                 autoComplete="email" textContentType="emailAddress" returnKeyType="done" onSubmitEditing={save} />
-              <Text style={styles.hint}>Usamos tu email para identificar el pago en Mercado Pago.</Text>
+              <Text style={styles.hint}>También enviaremos tu código de confirmación de turno por email.</Text>
               {submitted && !!errors.email && <Text style={styles.error}>{errors.email}</Text>}
             </View>
           </> : <>
@@ -123,6 +120,7 @@ const styles = StyleSheet.create({
   input: { minHeight: 56, padding: 16, fontSize: 17, color: colors.ink, borderWidth: 1, borderColor: '#CCD8E9', borderRadius: 16, backgroundColor: '#F8FAFE' },
   invalid: { borderColor: '#AD2936' },
   phone: { flexDirection: 'row', gap: 12, alignItems: 'center', paddingHorizontal: 16, minHeight: 56, borderWidth: 1, borderColor: '#CCD8E9', borderRadius: 16, backgroundColor: '#F8FAFE' },
+  areaInput: { width: 60, minHeight: 56, fontSize: 17, color: colors.ink, borderRightWidth: 1, borderRightColor: '#CCD8E9', paddingRight: 8 },
   phoneInput: { flex: 1, minHeight: 56, fontSize: 17, color: colors.ink },
   hint: { color: colors.label, fontSize: 14, lineHeight: 22 },
   error: { color: '#AD2936', fontSize: 14, lineHeight: 22 },

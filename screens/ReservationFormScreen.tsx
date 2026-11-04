@@ -74,21 +74,17 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
               {fieldError('apellido')}
             </View>
             <View style={styles.field}>
-              <Text style={styles.label}>Código de área</Text>
-              <TextInput ref={areaRef} accessibilityLabel="Código de área sin cero" placeholder="351" placeholderTextColor="#687991" style={[styles.input, !!errorFor('codigoArea') && styles.invalid]}
-                value={codigoArea} onChangeText={text => setCodigoArea(text.replace(/\D/g, ''))} onBlur={() => touch('codigoArea')} keyboardType="phone-pad" maxLength={4} returnKeyType="next" onSubmitEditing={() => phoneRef.current?.focus()} />
-              <Text style={styles.hint}>Sin el 0 inicial. Por ejemplo: 11, 351 o 2954.</Text>
-              {fieldError('codigoArea')}
-            </View>
-            <View style={styles.field}>
               <Text style={styles.label}>Teléfono celular</Text>
-              <View style={[styles.phone, !!errorFor('telefono') && styles.invalid]}>
-                <Text style={styles.prefix}>+54 {codigoArea}</Text>
+              <View style={[styles.phone, (!!errorFor('telefono') || !!errorFor('codigoArea')) && styles.invalid]}>
+                <Text style={styles.prefix}>+54</Text>
+                <TextInput ref={areaRef} accessibilityLabel="Código de área sin cero" placeholder="351" placeholderTextColor="#687991" style={styles.areaInput}
+                  value={codigoArea} onChangeText={text => setCodigoArea(text.replace(/\D/g, ''))} onBlur={() => touch('codigoArea')} keyboardType="phone-pad" maxLength={4} returnKeyType="next" onSubmitEditing={() => phoneRef.current?.focus()} />
                 <TextInput ref={phoneRef} style={styles.phoneInput} accessibilityLabel="Número de celular sin código de área ni 15" placeholder="123 4567" placeholderTextColor="#687991" keyboardType="phone-pad" autoComplete="off"
                   value={telefono} onBlur={() => touch('telefono')} maxLength={8} returnKeyType="next" onSubmitEditing={() => emailRef.current?.focus()}
                   onChangeText={text => setTelefono(text.replace(/\D/g, ''))} />
               </View>
-              <Text style={styles.hint}>Número local, sin el 15. Completá el código de área en el campo anterior.</Text>
+              <Text style={styles.hint}>Código de área + número, sin 0 ni 15.</Text>
+              {fieldError('codigoArea')}
               {fieldError('telefono')}
               <Text style={styles.hint}>Enviaremos por WhatsApp tu código de confirmación de turno.</Text>
             </View>
@@ -97,7 +93,7 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
               <TextInput ref={emailRef} accessibilityLabel="Email" style={[styles.input, !!errorFor('email') && styles.invalid]}
                 value={email} onChangeText={setEmail} onBlur={() => touch('email')} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
                 autoComplete="email" textContentType="emailAddress" maxLength={254} returnKeyType="done" onSubmitEditing={pay} />
-              <Text style={styles.hint}>Usamos tu email para identificar el pago en Mercado Pago.</Text>
+              <Text style={styles.hint}>También enviaremos tu código de confirmación de turno por email.</Text>
               {fieldError('email')}
             </View>
           </View>
@@ -128,6 +124,7 @@ const styles = StyleSheet.create({
   invalid: { borderColor: '#AD2936' },
   phone: { minHeight: 56, flexDirection: 'row', alignItems: 'center', borderRadius: 16, borderWidth: 1, borderColor: '#CCD8E9', backgroundColor: '#F8FAFE', paddingHorizontal: 16, gap: 12 },
   prefix: { fontSize: 17, lineHeight: 24, fontWeight: '600', color: colors.ink },
+  areaInput: { width: 60, minHeight: 56, fontSize: 17, color: colors.ink, borderRightWidth: 1, borderRightColor: '#CCD8E9', paddingRight: 8 },
   phoneInput: { flex: 1, minHeight: 56, paddingVertical: 14, fontSize: 17, lineHeight: 24, color: colors.ink },
   hint: { fontSize: 13, lineHeight: 20, color: colors.label },
   error: { color: '#AD2936', fontSize: 13, lineHeight: 20 },
