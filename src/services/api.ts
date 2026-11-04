@@ -35,7 +35,7 @@ export async function getAvailableSlots(date: string, time: string, duration: nu
 export async function createReservation(r: ReservationData): Promise<BookingResponse> {
   const response = await api.post<BookingResponse>('/reservations', {
     start_time: bookingStart(r.date, r.time),
-    duration_minutes: r.duration, name: r.nombre, email: r.email?.trim() || undefined, phone: r.telefono,
+    duration_minutes: r.duration, name: [r.nombre, r.apellido].filter(Boolean).join(' '), first_name: r.apellido ? r.nombre : undefined, last_name: r.apellido, phone_area_code: r.codigoArea, email: r.email?.trim() || undefined, phone: r.telefono,
   });
   return response.data;
 }

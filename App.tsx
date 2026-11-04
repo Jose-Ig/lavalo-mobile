@@ -33,6 +33,8 @@ export interface BookingData {
 }
 
 export interface ReservationData extends BookingData {
+  apellido?: string;
+  codigoArea?: string;
   nombre: string;
   email?: string;
   telefono: string;

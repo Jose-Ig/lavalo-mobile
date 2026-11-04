@@ -8,34 +8,42 @@ import ActionButton from '../src/components/ActionButton';
 import { homeTheme as colors } from '../src/theme/home';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ReservationForm'>;
-type Field = 'nombre' | 'telefono' | 'email';
+type Field = 'nombre' | 'apellido' | 'codigoArea' | 'telefono' | 'email';
 export default function ReservationFormScreen({ navigation, route }: Props) {
   const isSubscription = route.params.flowType === 'subscription';
   const booking = isSubscription ? undefined : route.params.booking;
   const subscriptionBooking = isSubscription ? route.params.subscriptionBooking : undefined;
   const insets = useSafeAreaInsets();
   const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
+  const [codigoArea, setCodigoArea] = useState('');
   const [email, setEmail] = useState('');
   const [telefono, setTelefono] = useState('');
   const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
+  const lastNameRef = useRef<TextInputInstance>(null);
+  const areaRef = useRef<TextInputInstance>(null);
   const emailRef = useRef<TextInputInstance>(null);
   const phoneRef = useRef<TextInputInstance>(null);
   const nameRef = useRef<TextInputInstance>(null);
   const touch = (field: Field) => setTouched(previous => ({ ...previous, [field]: true }));
   const errors: Record<Field, string> = {
-    nombre: nombre.trim().length < 2 ? 'Ingresá tu nombre (al menos 2 caracteres).' : '',
-    email: email.trim() && (email.trim().length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ? 'Ingresá un email válido.' : '',
-    telefono: !/^\d{10}$/.test(telefono) ? 'Ingresá 10 dígitos: código de área y número, sin 0 ni 15.' : '',
+    nombre: !nombre.trim() ? 'Ingresá tu nombre.' : '',
+    apellido: !apellido.trim() ? 'Ingresá tu apellido.' : '',
+    codigoArea: !/^[1-9]\d{1,3}$/.test(codigoArea) ? 'Ingresá el código de área sin 0 (por ejemplo, 351).' : '',
+    email: (email.trim().length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ? 'Ingresá un email válido.' : '',
+    telefono: !/^\d+$/.test(telefono) || (codigoArea + telefono).length !== 10 ? 'El código de área y el número deben sumar 10 dígitos, sin 0 ni 15.' : '',
   };
   const errorFor = (field: Field) => touched[field] ? errors[field] : '';
   const goBack = () => { Keyboard.dismiss(); navigation.goBack(); };
   const pay = () => {
-    setTouched({ nombre: true, telefono: true, email: true });
+    setTouched({ nombre: true, apellido: true, codigoArea: true, telefono: true, email: true });
     if (errors.nombre) { nameRef.current?.focus(); return; }
+    if (errors.apellido) { lastNameRef.current?.focus(); return; }
+    if (errors.codigoArea) { areaRef.current?.focus(); return; }
     if (errors.telefono) { phoneRef.current?.focus(); return; }
     if (errors.email) { emailRef.current?.focus(); return; }
     Keyboard.dismiss();
-    const data = { nombre: nombre.trim(), email: email.trim() || undefined, telefono: `+54${telefono}` };
+    const data = { nombre: nombre.trim(), apellido: apellido.trim(), codigoArea, email: email.trim(), telefono: `+54${codigoArea}${telefono}` };
     if (isSubscription && subscriptionBooking) navigation.navigate('SubscriptionPayment', { subscriptionBooking, reservation: { ...data, date: '', time: subscriptionBooking.time, duration: subscriptionBooking.duration, espacio: 1 } });
     else if (booking) navigation.navigate('Payment', { reservation: { ...booking, ...data } });
   };
@@ -50,33 +58,46 @@ export default function ReservationFormScreen({ navigation, route }: Props) {
         <View style={styles.content}>
           <View style={styles.intro}>
             <Text accessibilityRole="header" style={styles.title}>¿Para quién es la reserva?</Text>
-            <Text style={styles.description}>Completá tu nombre y celular para recibir el código de tu reserva.</Text>
+            <Text style={styles.description}>Completá tus datos de contacto para reservar y realizar el pago.</Text>
           </View>
           <View style={styles.fields}>
             <View style={styles.field}>
-              <Text style={styles.label}>Nombre completo</Text>
-              <TextInput ref={nameRef} style={[styles.input, !!errorFor('nombre') && styles.invalid]} accessibilityLabel="Nombre completo" placeholderTextColor="#687991"
-                value={nombre} onChangeText={setNombre} onBlur={() => touch('nombre')} maxLength={100} autoComplete="name" textContentType="name" autoCapitalize="words" returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => phoneRef.current?.focus()} />
+              <Text style={styles.label}>Nombre</Text>
+              <TextInput ref={nameRef} style={[styles.input, !!errorFor('nombre') && styles.invalid]} accessibilityLabel="Nombre" placeholderTextColor="#687991"
+                value={nombre} onChangeText={setNombre} onBlur={() => touch('nombre')} maxLength={100} autoComplete="given-name" textContentType="givenName" autoCapitalize="words" returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => lastNameRef.current?.focus()} />
               {fieldError('nombre')}
+            </View>
+            <View style={styles.field}>
+              <Text style={styles.label}>Apellido</Text>
+              <TextInput ref={lastNameRef} accessibilityLabel="Apellido" style={[styles.input, !!errorFor('apellido') && styles.invalid]}
+                value={apellido} onChangeText={setApellido} onBlur={() => touch('apellido')} maxLength={100} autoComplete="family-name" textContentType="familyName" autoCapitalize="words" returnKeyType="next" onSubmitEditing={() => areaRef.current?.focus()} />
+              {fieldError('apellido')}
+            </View>
+            <View style={styles.field}>
+              <Text style={styles.label}>Código de área</Text>
+              <TextInput ref={areaRef} accessibilityLabel="Código de área sin cero" placeholder="351" placeholderTextColor="#687991" style={[styles.input, !!errorFor('codigoArea') && styles.invalid]}
+                value={codigoArea} onChangeText={text => setCodigoArea(text.replace(/\D/g, ''))} onBlur={() => touch('codigoArea')} keyboardType="phone-pad" maxLength={4} returnKeyType="next" onSubmitEditing={() => phoneRef.current?.focus()} />
+              <Text style={styles.hint}>Sin el 0 inicial. Por ejemplo: 11, 351 o 2954.</Text>
+              {fieldError('codigoArea')}
             </View>
             <View style={styles.field}>
               <Text style={styles.label}>Teléfono celular</Text>
               <View style={[styles.phone, !!errorFor('telefono') && styles.invalid]}>
-                <Text style={styles.prefix}>+54</Text>
-                <TextInput ref={phoneRef} style={styles.phoneInput} accessibilityLabel="Teléfono celular, código de área y número sin 0 ni 15" placeholder="351 123 4567" placeholderTextColor="#687991" keyboardType="phone-pad" autoComplete="tel-national" textContentType="telephoneNumber"
-                  value={telefono} onBlur={() => touch('telefono')} maxLength={20} returnKeyType="next" onSubmitEditing={() => emailRef.current?.focus()}
-                  onChangeText={text => { let digits = text.replace(/\D/g, ''); if (digits.length > 10 && digits.startsWith('54')) digits = digits.slice(2); if (digits.length === 11 && digits.startsWith('9')) digits = digits.slice(1); setTelefono(digits); }} />
+                <Text style={styles.prefix}>+54 {codigoArea}</Text>
+                <TextInput ref={phoneRef} style={styles.phoneInput} accessibilityLabel="Número de celular sin código de área ni 15" placeholder="123 4567" placeholderTextColor="#687991" keyboardType="phone-pad" autoComplete="off"
+                  value={telefono} onBlur={() => touch('telefono')} maxLength={8} returnKeyType="next" onSubmitEditing={() => emailRef.current?.focus()}
+                  onChangeText={text => setTelefono(text.replace(/\D/g, ''))} />
               </View>
-              <Text style={styles.hint}>Código de área + número, sin 0 ni 15.</Text>
+              <Text style={styles.hint}>Número local, sin el 15. Completá el código de área en el campo anterior.</Text>
               {fieldError('telefono')}
               <Text style={styles.hint}>Enviaremos por WhatsApp tu código de confirmación de turno.</Text>
             </View>
             <View style={styles.field}>
-              <Text style={styles.label}>Email (opcional)</Text>
-              <TextInput ref={emailRef} accessibilityLabel="Email opcional" style={[styles.input, !!errorFor('email') && styles.invalid]}
+              <Text style={styles.label}>Email</Text>
+              <TextInput ref={emailRef} accessibilityLabel="Email" style={[styles.input, !!errorFor('email') && styles.invalid]}
                 value={email} onChangeText={setEmail} onBlur={() => touch('email')} keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
                 autoComplete="email" textContentType="emailAddress" maxLength={254} returnKeyType="done" onSubmitEditing={pay} />
-              <Text style={styles.hint}>En caso de que quieras que el código también se envíe por email.</Text>
+              <Text style={styles.hint}>Usamos tu email para identificar el pago en Mercado Pago.</Text>
               {fieldError('email')}
             </View>
           </View>
