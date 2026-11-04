@@ -208,7 +208,7 @@ export default function CheckoutStatusScreen({ navigation, route }: Props) {
             <Pressable accessibilityRole="button" accessibilityLabel="Pagar con Mercado Pago" accessibilityHint="Abrí el checkout de Mercado Pago para esta reserva" accessibilityState={{ disabled: busy }} disabled={busy}
               onPress={() => void pay()} android_ripple={{ color: '#D9E6FF' }} style={({ pressed }) => [styles.method, (pressed || busy) && styles.dimmed]}>
               <Image accessible={false} source={require('../assets/payments/mercadopago.png')} style={styles.logo} resizeMode="contain" />
-              {busy ? <ActivityIndicator color={colors.blue} /> : <Text style={styles.methodLabel}>Pagar</Text>}
+              {busy && <ActivityIndicator style={styles.paymentSpinner} color={colors.blue} />}
             </Pressable>
           </View>
         </View>}
@@ -238,9 +238,9 @@ const styles = StyleSheet.create({
   confirmed: { backgroundColor: '#E5F5EB' },
   methodsSection: { gap: 16 },
   methodsGrid: { width: '100%' },
-  method: { width: '100%', minHeight: 128, padding: 16, alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#B7CAE7', borderRadius: 16, overflow: 'hidden' },
-  logo: { width: '75%', maxWidth: 240, height: 56 },
-  methodLabel: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '600' },
+  method: { width: '100%', minHeight: 176, padding: 16, alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#B7CAE7', borderRadius: 16, overflow: 'hidden' },
+  logo: { width: 180, height: 144 },
+  paymentSpinner: { position: 'absolute', right: 16, top: 16 },
   error: { color: '#AD2936', fontSize: 15, lineHeight: 22 },
   dimmed: { opacity: 0.6 },
   actions: { alignItems: 'center', gap: 12 },
