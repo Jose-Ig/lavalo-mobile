@@ -95,15 +95,23 @@ export interface ReservationAccess {
  id: number; code: string; slot_id: number; slot_label: string;
  start_time: string; end_time: string; duration_minutes: number;
  status: Reservation['status']; can_verify_qr: boolean; activation_reason: string;
- qr_verified_at?: string; activation_status: 'not_started' | 'awaiting_controller' | 'simulated' | 'active' | 'controller_offline' | 'controller_unavailable' | 'controller_unknown' | 'ended';
+ qr_verified_at?: string; activation_status: 'not_started' | 'awaiting_controller' | 'simulated' | 'active' | 'controller_offline' | 'controller_unavailable' | 'controller_unknown' | 'pending_recovery' | 'ended';
+ operational_state?: 'not_started' | 'simulated' | 'running' | 'communication_lost' | 'recovering' | 'pending_recovery' | 'completed' | 'closed';
+ operational_reason?: string; operational_end_ms?: number; remaining_ms?: number; server_ms?: number;
+ operational_version?: number; timer_frozen?: boolean; client_clock_offset_ms?: number;
+}
+function withServerClock(reservation: ReservationAccess, requestedAt: number): ReservationAccess {
+ return { ...reservation, client_clock_offset_ms: reservation.server_ms === undefined ? 0 : reservation.server_ms - (requestedAt + Date.now()) / 2 };
 }
 export async function lookupReservationCode(code: string, date: string): Promise<ReservationAccess> {
+ const requestedAt = Date.now();
  const result = await api.post<{ data: ReservationAccess }>('/reservations/lookup', { code, date });
- return result.data.data;
+ return withServerClock(result.data.data, requestedAt);
 }
 export async function verifyReservationSlot(code: string, qr: string, date: string): Promise<ReservationAccess> {
+ const requestedAt = Date.now();
  const result = await api.post<{ data: ReservationAccess }>('/reservations/verify-slot', { code, qr, date });
- return result.data.data;
+ return withServerClock(result.data.data, requestedAt);
 }
 export function reservationAccessError(error: unknown): string {
  if (axios.isAxiosError(error)) {

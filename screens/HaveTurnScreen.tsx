@@ -1,3 +1,4 @@
+import { freezeTimer, remainingMilliseconds, timerMessage } from '../src/services/reservationTimer';
 import { formatSpaceLabel } from '../src/services/reservationDisplay';
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { AppState, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -73,7 +74,7 @@ export default function HaveTurnScreen({ navigation }: Props) {
       } catch {
         const latest = currentAccess.current;
         if (active && latest?.reservation.id === saved.reservation.id && latest.reservation.qr_verified_at && !['simulated', 'not_started'].includes(latest.reservation.activation_status)) {
-          setAccess({ ...latest, reservation: { ...latest.reservation, activation_status: 'controller_unknown' } });
+          setAccess({ ...latest, reservation: freezeTimer(latest.reservation) });
         }
       }
       finally { refreshing = false; }
@@ -119,7 +120,9 @@ export default function HaveTurnScreen({ navigation }: Props) {
   };
   const verified = !!reservation?.qr_verified_at;
   const serviceRunning = verified && (reservation?.activation_status === 'active' || reservation?.activation_status === 'simulated');
-  const remaining = reservation?.status === 'confirmed' ? Math.max(0, Math.ceil((Date.parse(reservation.end_time) - now) / 1000)) : 0;
+  const remaining = reservation ? Math.ceil(remainingMilliseconds(reservation, now) / 1000) : 0;
+  const clockMessage = reservation ? timerMessage(reservation) : null;
+  const finished = !!reservation && (reservation.status !== 'confirmed' || reservation.activation_status === 'ended' || ['closed', 'completed'].includes(reservation.operational_state ?? '') || (serviceRunning && remaining === 0));
   const countdown = `${String(Math.floor(remaining / 3600)).padStart(2, '0')}:${String(Math.floor((remaining % 3600) / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
   const openExtension = async () => {
     if (!reservation || lock.current) return;
@@ -166,10 +169,9 @@ export default function HaveTurnScreen({ navigation }: Props) {
               {reservation.status === 'confirmed' && <ActionButton surface="light" label="Escanear QR" disabled={busy || reservation.activation_reason === 'expired'} onPress={() => setScanner(true)} />}
             </>}
             {verified && <>
-              {remaining > 0 && reservation.status === 'confirmed' && !serviceRunning ? <Text accessibilityLiveRegion="polite" style={styles.text}>{reservation.activation_status === 'controller_unknown' ? 'No podemos confirmar el estado del equipo. Revisá tu conexión.' : reservation.activation_status === 'controller_offline' ? 'El dispositivo está sin conexión. No podemos confirmar el estado del equipo.' : reservation.activation_status === 'controller_unavailable' ? 'El dispositivo no está disponible. Contactanos para recibir ayuda.' : 'Activando tu espacio…'}</Text> : <>
-                <Text style={styles.label}>{remaining > 0 && reservation.status === 'confirmed' ? 'Tiempo restante' : 'Turno finalizado'}</Text>
-                <Text accessibilityLabel={`Tiempo restante ${countdown}`} style={styles.countdown}>{countdown}</Text>
-              </>}
+              {clockMessage && !finished && <Text accessibilityLiveRegion="polite" style={styles.text}>{clockMessage}</Text>}
+              <Text style={styles.label}>{finished ? 'Turno finalizado' : reservation.timer_frozen || reservation.activation_status === 'controller_unknown' ? 'Tiempo pendiente de sincronización' : 'Tiempo restante'}</Text>
+              <Text accessibilityLabel={`Tiempo restante ${countdown}`} style={styles.countdown}>{countdown}</Text>
               {reservation.status === 'confirmed' && remaining > 0 && serviceRunning && !pendingExtension && <ActionButton surface="light" label="Agregar más tiempo" disabled={busy} onPress={() => void openExtension()} />}
               {!!pendingExtension && <ActionButton surface="light" label="Ver pago de tiempo adicional" disabled={busy} onPress={() => navigation.navigate('CheckoutStatus', { reservationId: pendingExtension })} />}
               {reservation.activation_status === 'simulated' && reservation.status === 'confirmed' && remaining > 0 && <Text style={styles.hint}>Modo de prueba: equipo simulado.</Text>}
